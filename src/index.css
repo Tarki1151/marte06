@@ -249,10 +249,13 @@ textarea:focus {
   align-items: center;
   transition: opacity 0.2s ease, background-color 0.2s ease; /* Geçiş efektleri */
   opacity: 0.9;
+  background-color: transparent; /* Arkaplan rengi kaldırıldı */
+  color: #555; /* Varsayılan ikon rengi */
 }
 
 .card li .actions button:hover:not(:disabled) {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05); /* Hafif hover arkaplanı */
 }
 
 .card li .actions button:disabled {
@@ -262,22 +265,22 @@ textarea:focus {
   opacity: 0.6 !important;
 }
 
-/* Düzenle Butonu Stili */
+/* Düzenle Butonu Stili (sadece ikon rengi belirginleşecek) */
 .card li .actions button.edit-button {
-    background-color: #ffc107;
-    color: #212529;
+    /* background-color kaldırıldı */
+    color: #ffc107; /* Sarı renk */
 }
 
 .card li .actions button.edit-button:hover:not(:disabled) {
-    background-color: #e0a800;
+    background-color: rgba(255, 193, 7, 0.1); /* Hafif sarı hover arkaplanı */
 }
 
-/* Sil Butonu Stili */
+/* Sil Butonu Stili (sadece ikon rengi belirginleşecek) */
 .card li .actions button.delete-button {
-    background-color: #dc3545;
-    color: white;
+    /* background-color kaldırıldı */
+    color: #dc3545; /* Kırmızı renk */
 }
 
 .card li .actions button.delete-button:hover:not(:disabled) {
-    background-color: #c82333;
+    background-color: rgba(220, 53, 69, 0.1); /* Hafif kırmızı hover arkaplanı */
 }

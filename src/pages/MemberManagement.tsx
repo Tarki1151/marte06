@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import AddMemberForm from '../components/AddMemberForm.tsx';
 import MemberList from '../components/MemberList.tsx';
-import './MemberManagement.css'; // Sayfaya özgü diğer stiller için
+// import './MemberManagement.css'; // Sayfaya özgü diğer stiller için - KALDIRILDI
 import type { Member } from '../components/MemberList.tsx'; // Member tipi için import
 
 const MemberManagement: React.FC = () => {
@@ -10,7 +10,7 @@ const MemberManagement: React.FC = () => {
   const [refreshList, setRefreshList] = useState(false); // Liste yenileme için state
   const [editingMember, setEditingMember] = useState<Member | null>(null); // Düzenlenen üye state'i
 
-  // Üye ekleme başarılı olunca tetiklenir
+  // Üye ekleme başarılı olınca tetiklenir
   const handleMemberAdded = () => {
     setShowAddForm(false); // Formu gizle
     setRefreshList(prev => !prev); // Listeyi yenile
