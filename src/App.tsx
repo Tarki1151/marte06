@@ -8,7 +8,7 @@ import BranchManagement from './pages/BranchManagement.tsx'; // Yeni sayfa impor
 import CalendarManagement from './pages/CalendarManagement.tsx'; // Yeni sayfa importu
 import Reports from './pages/Reports.tsx'; // Yeni sayfa importu
 import BottomNavBar from './components/BottomNavBar.tsx';
-import './App.css';
+// import './App.css'; // KALDIRILDI
 
 function App() {
   const { currentUser, loading } = useAuth();
@@ -67,7 +67,7 @@ function App() {
 
       </Routes>
 
-      {/* current user varsa navigasyon barını göster */}
+      {/* current user varsa navigasyon barı göster */}
       {currentUser && (
         <BottomNavBar />
       )}

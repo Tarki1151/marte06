@@ -1,4 +1,4 @@
-/* src/index.css */
+/* src/index.css - Combined Styles */
 
 /* Temel Sıfırlama ve Box Sizing */
 *, *::before, *::after {
@@ -8,15 +8,15 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 16px; /* Temel font boyutu */
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f7f9;
-  color: #333;
+  background-color: #f4f7f9; /* Daha açık ve modern bir arkaplan */
+  color: #333; /* Varsayılan metin rengi */
   line-height: 1.6;
   min-height: 100vh;
   display: flex;
@@ -31,11 +31,11 @@ body {
 
 .App {
   flex: 1;
-  padding-bottom: 70px;
+  padding-bottom: 70px; /* BottomNavBar için boşluk */
   width: 100%;
 }
 
-/* Başlık Stilleri */
+/* Temel Başlık Stilleri */
 h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.75em;
   font-weight: 600;
@@ -49,7 +49,7 @@ p {
   margin-bottom: 1em;
 }
 
-/* Buton Stilleri */
+/* Genel Buton Stilleri */
 button, input[type="submit"] {
   padding: 0.75em 1.5em;
   border: none;
@@ -156,20 +156,128 @@ textarea:focus {
   justify-content: flex-end;
 }
 
-/* Kart Stili (common.css'ten import ediliyor) */
+/* Kart Stili */
 .card {
-  /* common.css'ten geliyor */
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
-/* Responsive Ayarlar */
-@media (max-width: 768px) {
-  html { font-size: 15px; }
-  .card { padding: 15px; }
-  .form-actions { flex-direction: column; gap: 0.5rem; }
-  .form-actions button, .form-actions input[type="submit"] { width: 100%; }
+@media (max-width: 600px) {
+  .card {
+    padding: 15px;
+  }
 }
 
-@media (max-width: 480px) {
-  html { font-size: 14px; }
-  .card { padding: 10px; }
+/* --- Liste Elemanı Stilleri (Bullet Noktası Kaldırma ve Hizalama) --- */
+
+/* .card sınıfına sahip bir ul elementini hedefliyoruz */
+/* Bu kural, member-list ve branch-list gibi ul elementleri için bullet noktalarını kaldırır */
+.card ul {
+  list-style: none !important; /* Bullet noktalarını kesin olarak kaldır */
+  padding: 0 !important; /* Varsayılan padding kaldır (özellikle sol padding) */
+  margin: 0 !important; /* Varsayılan margin kaldır */
+  display: flex; /* ul'yi flex container yap */
+  flex-direction: column; /* li'leri alt alta sırala */
+  gap: 10px; /* li'ler arasına boşluk */
+}
+
+/* Kart olarak kullanılan li elementi stili */
+/* .card ve .member-list-item sınıflarına sahip li elementini hedefliyoruz */
+.card li.member-list-item { /* Hem card hem member-list-item class'ına sahip li elementini hedefle */
+  background-color: #fff; /* li arkaplan */
+  border: 1px solid #ddd; /* li kenarlık */
+  border-radius: 5px; /* li köşe yuvarlaklığı */
+  padding: 10px 15px; /* İç boşluk */
+  /* margin-bottom artık gap tarafından sağlanacak */
+  box-shadow: 0 1px 5px rgba(0,0,0,0.05); /* li gölge */
+  transition: background-color 0.2s ease;
+
+  display: flex !important; /* İçerikleri kesin olarak yan yana sırala */
+  justify-content: space-between !important; /* Bilgiler sola, butonlar sağa */
+  align-items: center !important; /* Dikeyde kesin olarak ortala */
+  flex-wrap: wrap; /* İçerik sığmazsa alt satıra geç */
+   /* list-style: none burada tekrar etmeye gerek yok, ul'de ayarlandı */
+}
+
+/* .card.member-list-item hover efekti */
+.card li.member-list-item:hover {
+    background-color: #f8f8f8; /* li hover arkaplanı */
+}
+
+
+/* --- Liste Elemanı İçindeki İçerik ve Buton Stilleri --- */
+
+/* .card li içindeki span (üye/paket adı vb.) */
+.card li span { /* .card li span */
+    flex-grow: 1; /* Mümkün olduğunca yer kapla */
+    margin-right: 15px; /* Bilgi ve butonlar arasına boşluk */
+    white-space: nowrap; /* Metni tek satırda tut */
+    overflow: hidden; /* Taşanı gizle */
+    text-overflow: ellipsis; /* Taşanı üç nokta ile göster */
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Eğer span içinde h4 ve p kullanılıyorsa (Paket Listesi gibi) */
+.card li span h4,
+.card li span p {
+    margin: 0;
+}
+
+/* Aksiyon Butonları Container */
+/* .card li içindeki .actions div'ini hedefle */
+.card li .actions { /* .card li .actions */
+  display: flex !important;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Aksiyon Butonları */
+/* .card li .actions içindeki buttonları hedefle */
+.card li .actions button { /* .card li .actions button */
+  padding: 5px 10px; /* Buton padding */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem; /* İkon boyutu */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.2s ease, background-color 0.2s ease; /* Geçiş efektleri */
+  opacity: 0.9;
+}
+
+.card li .actions button:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.card li .actions button:disabled {
+  background-color: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed;
+  opacity: 0.6 !important;
+}
+
+/* Düzenle Butonu Stili */
+.card li .actions button.edit-button {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.card li .actions button.edit-button:hover:not(:disabled) {
+    background-color: #e0a800;
+}
+
+/* Sil Butonu Stili */
+.card li .actions button.delete-button {
+    background-color: #dc3545;
+    color: white;
+}
+
+.card li .actions button.delete-button:hover:not(:disabled) {
+    background-color: #c82333;
 }
