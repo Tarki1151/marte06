@@ -1,0 +1,77 @@
+/* src/components/Calendar.css */
+
+.calendar-container {
+    /* .card styles from index.css will apply here */
+    text-align: center;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.calendar-header button {
+    /* General button styles from index.css will apply */
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.calendar-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.days-of-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 eşit sütun */
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.days-of-week div {
+    text-align: center;
+}
+
+.calendar-cells {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 eşit sütun */
+    gap: 5px; /* Günler arasına boşluk */
+}
+
+.calendar-cell {
+    padding: 10px 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.calendar-cell:hover:not(.disabled) {
+    background-color: #e9ecef;
+}
+
+.calendar-cell.disabled {
+    color: #ccc; /* Pasif günler */
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+.calendar-cell.today {
+    border: 1px solid #007bff;
+    font-weight: bold;
+}
+
+.calendar-cell.selected {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-cell.selected:hover:not(.disabled) {
+    background-color: #0056b3;
+}

@@ -1,0 +1,53 @@
+/* src/components/BottomNavBar.css */
+
+.bottom-nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f8f8f8; /* Arkaplan rengi */
+  display: flex;
+  justify-content: space-around; /* Linkleri eşit aralıklarla yay */
+  padding: 10px 0;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Üste gölge */
+  z-index: 1000; /* Diğer içeriklerin üstünde olması için */
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: row; /* İkon ve yazıyı yatay sırala */
+  align-items: center; /* Dikeyde ortala */
+  text-decoration: none;
+  color: #333; /* Link rengi */
+  font-size: 12px;
+  padding: 5px 10px; /* Tıklanabilir alanı artır */
+  border-radius: 5px; /* Hafif yuvarlak köşeler */
+  /* Button elementi için varsayılan border ve background kaldırılır */
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background-color: #e9e9e9; /* Hover arkaplan */
+  color: #007bff; /* Hover rengi */
+}
+
+.nav-icon {
+  margin-right: 5px; /* İkon ile yazı arasına boşluk */
+  font-size: 18px; /* İkon boyutu (isteğe bağlı) */
+}
+
+.nav-link span {
+  /* margin-top: 4px; */ /* Artık dikey sıralanmıyor, bu stile gerek kalmadı */
+}
+
+/* Logout butonu stili */
+.logout-link-button {
+    color: #dc3545; /* Kırmızı renk */
+}
+
+.logout-link-button:hover {
+    color: #c82333; /* Koyu kırmızı hover */
+    background-color: #e9e9e9; /* Diğer linklerle aynı hover arkaplanı */
+}

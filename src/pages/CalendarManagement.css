@@ -1,0 +1,50 @@
+/* src/pages/CalendarManagement.css */
+
+.calendar-management-page {
+  padding: 20px;
+  padding-bottom: 70px; /* Bottom nav bar clearance */
+}
+
+.page-header { /* Page title container */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-management-page h2 {
+  margin: 0;
+}
+
+/* Selected date info section style */
+.selected-date-info {
+    margin-top: 30px; /* Space above this section */
+    /* .card styles from index.css will apply here */
+    text-align: center; /* Center content */
+}
+
+.selected-date-info h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.selected-date-info p {
+    margin-bottom: 0;
+    color: #555;
+}
+
+/* Style for the Add Lesson button */
+.add-lesson-button {
+    margin-top: 15px; /* Space above the button */
+    /* General button styles from index.css will apply */
+}
+
+@media (max-width: 600px) {
+  .calendar-management-page {
+    padding: 10px;
+    padding-bottom: 60px;
+  }
+  .selected-date-info {
+      padding: 15px;
+  }
+}

@@ -1,0 +1,54 @@
+/* src/components/AddBranchForm.css */
+
+.add-branch-form-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.add-branch-form-container form div {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-branch-form-container label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.add-branch-form-container input[type="text"],
+.add-branch-form-container textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.add-branch-form-container button[type="submit"] {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #28a745;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.add-branch-form-container button[type="submit"]:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.add-branch-form-container button[type="submit"]:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.add-branch-form-container p[style*="color: red"] {
+  margin-top: 10px;
+  font-weight: bold;
+}

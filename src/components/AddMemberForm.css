@@ -1,0 +1,38 @@
+/* src/components/AddMemberForm.css */
+
+/* Form elementleri için genel stiller index.css'ten gelecek */
+/* Burada sadece bu forma özgü düzenlemeler ve elementlerin gruplandırması stilize edilebilir */
+
+/* Doğum Tarihi Alanı İçin Özel Düzenleme */
+.birthdate-selects {
+    display: flex; /* Gün, Ay, Yıl selectlerini yatayda sırala */
+    gap: 10px; /* Aralarına boşluk */
+}
+
+.birthdate-selects select {
+    flex: 1; /* Boşluğu eşit paylaşarak yayılmalarını sağla */
+    /* padding, border, border-radius, font-size, width: 100% index.css'ten gelecek */
+}
+
+/* Ebeveyn Bilgileri Başlığı */
+h4 {
+    margin-top: 1.5rem; /* Üst boşluk */
+    margin-bottom: 1rem; /* Alt boşluk */
+    /* font-weight index.css'ten gelecek */
+    color: #333; /* Renk */
+}
+
+/* Checkbox ve Label Hizalaması */
+.checkbox-container {
+    display: flex; /* Checkbox ve label'ı yan yana al */
+    align-items: center;
+    gap: 10px; /* Aralarına boşluk */
+    margin-bottom: 1rem; /* Form grubu boşluğu */
+}
+
+/* Hata mesajı stili */
+p[style*="color: red"] {
+  margin-top: 1rem; /* Üst boşluk */
+  font-weight: bold; /* Kalın font */
+  /* Renk zaten inline style ile veriliyor */
+}

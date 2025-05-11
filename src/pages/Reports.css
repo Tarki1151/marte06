@@ -1,0 +1,7 @@
+/* src/pages/Reports.css */
+
+.reports-page {
+    padding: 20px;
+    padding-bottom: 70px; /* Bottom nav bar clearance */
+    text-align: center;
+}
