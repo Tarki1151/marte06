@@ -14,150 +14,172 @@ import { db } from '../firebaseConfig';
 
 const CalendarManagement: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<'morning' | 'evening' | null>(null); // Seçilen zaman dilimi state'i
   const [showMemberSelectModal, setShowMemberSelectModal] = useState(false);
   const [membersForSelectedDate, setMembersForSelectedDate] = useState<Member[]>([]);
   const [loadingMembersForDate, setLoadingMembersForDate] = useState(false);
   const [fetchMembersError, setFetchMembersError] = useState<string | null>(null);
 
   // --- Data Fetching Logic --- //
-  const fetchMembersForDate = useCallback(async (date: Date) => {
+  const fetchMembersForDate = useCallback(async (date: Date, timeSlot: 'morning' | 'evening') => {
       setLoadingMembersForDate(true);
       setFetchMembersError(null);
+      setMembersForSelectedDate([]); // Clear previous data
+
       try {
-        // Use UTC date for querying to avoid timezone issues
-        const startOfSelectedDayUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
-        const startOfNextDayUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + 1, 0, 0, 0, 0));
+        // Calculate the specific time (10:00 or 16:00 UTC) for the selected date and time slot
+        const lessonTimeUTC = new Date(Date.UTC(
+            date.getFullYear(), 
+            date.getMonth(), 
+            date.getDate(), 
+            timeSlot === 'morning' ? 10 : 16, // 10:00 UTC for morning, 16:00 UTC for evening
+            0, 0, 0
+        ));
 
         const lessonsRef = collection(db, 'lessons');
+        // Query for the lesson entry matching the specific date and time slot
         const q = query(
           lessonsRef,
-          where('date', '>=', startOfSelectedDayUTC),
-          where('date', '<', startOfNextDayUTC) // Strictly less than the start of the next day
+          where('date', '==', lessonTimeUTC), // Query for exact timestamp
+          where('timeSlot', '==', timeSlot) // Query for time slot
         );
 
         const querySnapshot = await getDocs(q);
 
-        let memberIdsForThisDate: string[] = [];
+        let memberIdsForThisLesson: string[] = [];
         if (!querySnapshot.empty) {
+          // Assuming only one lesson entry per date and time slot
           const lessonData = querySnapshot.docs[0].data();
-          memberIdsForThisDate = lessonData.memberIds || [];
+          memberIdsForThisLesson = lessonData.memberIds || [];
         }
 
-        if (memberIdsForThisDate.length > 0) {
+        if (memberIdsForThisLesson.length > 0) {
             const allMembersSnapshot = await getDocs(collection(db, 'members'));
             const allMembers: Member[] = allMembersSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data() as Omit<Member, 'id'>
             }));
-            const scheduledMembers = allMembers.filter(member => memberIdsForThisDate.includes(member.id));
+            const scheduledMembers = allMembers.filter(member => memberIdsForThisLesson.includes(member.id));
             scheduledMembers.sort((a, b) => a.name.localeCompare(b.name));
             setMembersForSelectedDate(scheduledMembers);
 
         } else {
-          setMembersForSelectedDate([]);
+          setMembersForSelectedDate([]); // No members scheduled for this time slot
         }
 
       } catch (error: any) {
-        console.error('Üyeleri seçilen tarih için çekme hatası:', error);
+        console.error('Üyeleri seçilen tarih ve zaman dilimi için çekme hatası:', error);
         setFetchMembersError('Ders üyeleri yüklenirken bir hata oluştu: ' + error.message);
         setMembersForSelectedDate([]);
       } finally {
         setLoadingMembersForDate(false);
       }
-  }, [db]); // db is a dependency as it's used inside fetchMembersForDate
+  }, [db]);
   // --- End Data Fetching Logic --- //
 
 
-  // Automatically select today's date on initial load and fetch members for that date
+  // Automatically select today's date on initial load
   useEffect(() => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    today.setHours(0, 0, 0, 0); // Normalize to start of day for selectedDate state
     setSelectedDate(today);
-    // Initial fetch for today's date
-    fetchMembersForDate(today);
-  }, [fetchMembersForDate]); // fetchMembersForDate is a dependency
+    // Don't fetch here, wait for time slot selection or default
+  }, []);
 
-  // Fetch members for the selected date whenever selectedDate changes
+  // Fetch members when selectedDate or selectedTimeSlot changes
   useEffect(() => {
-    // Only fetch if selectedDate is not null and is different from the date already fetched
-    // We can compare date strings or timestamps to avoid unnecessary re-fetches.
-    if (selectedDate) {
-        // Check if the currently displayed members correspond to the selected date
-        // (This is a simplification; a robust check would involve comparing the date used for the last fetch)
-         const currentDisplayedDate = membersForSelectedDate.length > 0 && membersForSelectedDate[0].hasOwnProperty('lessonDate') 
-             ? new Date((membersForSelectedDate[0] as any).lessonDate.toDate()).toDateString() // Assuming lessonDate is added to member objects for display
-             : null;
-
-         if (!currentDisplayedDate || selectedDate.toDateString() !== currentDisplayedDate) {
-             fetchMembersForDate(selectedDate);
-         }
-
-    } else {
-        setMembersForSelectedDate([]);
-    }
-  }, [selectedDate, fetchMembersForDate]); // selectedDate and fetchMembersForDate are dependencies
+      // Only fetch if a date and time slot are selected
+      if (selectedDate && selectedTimeSlot) {
+          fetchMembersForDate(selectedDate, selectedTimeSlot);
+      } else {
+          setMembersForSelectedDate([]); // Clear list if date or time slot is not selected
+      }
+  }, [selectedDate, selectedTimeSlot, fetchMembersForDate]); // Dependencies
 
 
   // Calendar bileşeninden gelen tarih seçimini işleyen fonksiyon
   const handleDateSelect = (date: Date | null) => {
     setSelectedDate(date);
     console.log('Takvimde seçilen tarih:', date);
-    // The useEffect watching selectedDate will handle fetching members for the new date.
+    // selectedTimeSlot will remain, triggering the useEffect to fetch if a slot is already selected
   };
+
+  // Function to select a time slot and trigger fetch
+  const handleTimeSlotSelect = (timeSlot: 'morning' | 'evening') => {
+      setSelectedTimeSlot(timeSlot);
+      console.log('Zaman dilimi seçildi:', timeSlot);
+      // The useEffect watching selectedDate and selectedTimeSlot will handle fetching
+  };
+
 
   // Function to open the member selection modal
   const handleAddLessonClick = () => {
-    if (selectedDate) {
+    // Only allow adding lesson if a date and time slot are selected
+    if (selectedDate && selectedTimeSlot) {
         setShowMemberSelectModal(true);
+    } else {
+        alert('Lütfen ders eklemek için önce bir tarih ve zaman dilimi seçin.');
     }
   };
 
   // Function to close the member selection modal
   const handleCloseMemberSelectModal = () => {
     setShowMemberSelectModal(false);
-    // After closing modal, re-fetch the displayed list for the date to show saved changes
-    if (selectedDate) {
-         fetchMembersForDate(selectedDate); // Re-fetch members for the current selected date
+    // After closing modal, re-fetch the displayed list for the date and time slot
+    if (selectedDate && selectedTimeSlot) {
+         fetchMembersForDate(selectedDate, selectedTimeSlot); // Re-fetch members
     }
   };
 
-  // Function to handle saving selected members to Firestore for the selected date
+  // Function to handle saving selected members to Firestore for the selected date and time slot
   const handleSaveLesson = async (selectedMemberIds: string[]) => {
-       if (!selectedDate) return;
+       // Cannot save if no date or time slot is selected
+       if (!selectedDate || !selectedTimeSlot) return;
 
        setLoadingMembersForDate(true);
        setFetchMembersError(null);
 
        try {
-           // Use UTC date for saving to ensure consistency
-           const dateToSave = new Date(Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0));
+           // Calculate the specific time (10:00 or 16:00 UTC) for saving
+           const lessonTimeUTC = new Date(Date.UTC(
+               selectedDate.getFullYear(), 
+               selectedDate.getMonth(), 
+               selectedDate.getDate(), 
+               selectedTimeSlot === 'morning' ? 10 : 16, 
+               0, 0, 0
+           ));
 
            const lessonsRef = collection(db, 'lessons');
+           // Query to find the existing lesson document for this specific date and time slot
            const q = query(
              lessonsRef,
-             where('date', '>=', dateToSave),
-             where('date', '<', new Date(Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1, 0, 0, 0, 0))) // Strictly less than next day UTC
+             where('date', '==', lessonTimeUTC), // Query for exact timestamp
+             where('timeSlot', '==', selectedTimeSlot) // Query for time slot
            );
 
            const querySnapshot = await getDocs(q);
 
            let lessonDocRef;
            if (!querySnapshot.empty) {
+               // If a lesson exists for this date and time slot, get its reference
                lessonDocRef = doc(db, 'lessons', querySnapshot.docs[0].id);
            } else {
+               // If no lesson exists for this date and time slot, create a new document reference
                lessonDocRef = doc(collection(db, 'lessons'));
            }
 
+           // Save or update the lesson document
            await setDoc(lessonDocRef, {
-               date: dateToSave, // Save date as Timestamp (UTC)
-               memberIds: selectedMemberIds,
+               date: lessonTimeUTC, // Save the specific timestamp (UTC)
+               timeSlot: selectedTimeSlot, // Save the time slot
+               memberIds: selectedMemberIds, // Save array of member IDs
                updatedAt: new Date(),
            }, { merge: true });
 
-           console.log('Members saved for date:', selectedDate.toLocaleDateString(), ', IDs:', selectedMemberIds);
+           console.log(\`Members saved for \${selectedDate.toLocaleDateString()} (\${selectedTimeSlot}):\`, selectedMemberIds);
 
            // Close modal and re-fetch
-           handleCloseMemberSelectModal(); // This calls fetchMembersForDate(selectedDate);
+           handleCloseMemberSelectModal(); // This calls fetchMembersForDate(selectedDate, selectedTimeSlot);
 
        } catch (error: any) {
            console.error('Ders üyelerini kaydetme hatası:', error);
@@ -177,25 +199,41 @@ const CalendarManagement: React.FC = () => {
       {/* Takvim Bileşeni */}
       <Calendar onDateSelect={handleDateSelect} selectedDate={selectedDate} /> {/* Pass selectedDate to Calendar */} 
 
-      {/* Seçilen Tarih Bilgisi ve Üye Listesi Alanı */}
+      {/* Seçilen Tarih ve Zaman Dilimi Bilgisi ve Kontrolleri */}
       <div className="selected-date-info card"> {/* Added .card class */} 
         {selectedDate ? (
-          <div className="date-details-container"> {/* Container for date details and list */} 
+          <div className="date-details-container"> {/* Container for date/time details and list */} 
             <h3>Seçilen Tarih: {selectedDate.toLocaleDateString()}</h3>
 
-            {/* Loading or Error for members for date */}
-            {loadingMembersForDate && <p>Üyeler yükleniyor...</p>}
-            {fetchMembersError && <p style={{ color: 'red' }}>{fetchMembersError}</p>}
+            {/* Zaman Dilimi Seçimi Butonları */}
+            <div className="time-slot-buttons"> {/* CSS için class */} 
+                <button 
+                    onClick={() => handleTimeSlotSelect('morning')}
+                    className={selectedTimeSlot === 'morning' ? 'selected' : ''}
+                >
+                    Sabah (10:00)
+                </button>
+                 <button 
+                    onClick={() => handleTimeSlotSelect('evening')}
+                    className={selectedTimeSlot === 'evening' ? 'selected' : ''}
+                >
+                    Akşam (16:00)
+                </button>
+            </div>
 
-            {/* Add Lesson Button (appears after loading and if no error) */}
-            {!loadingMembersForDate && !fetchMembersError && (
+            {/* Add Lesson Button (appears after loading and if no error and time slot is selected) */}
+            {!loadingMembersForDate && !fetchMembersError && selectedTimeSlot && (
                  <button onClick={handleAddLessonClick} className="add-lesson-button">Ders Üyelerini Seç</button>
             )}
 
-            {/* Display list of members already scheduled */}
-            {!loadingMembersForDate && !fetchMembersError && membersForSelectedDate.length > 0 && (
+            {/* Loading or Error for members for date and time slot */}
+            {loadingMembersForDate && <p>Üyeler yükleniyor...</p>}
+            {fetchMembersError && <p style={{ color: 'red' }}>{fetchMembersError}</p>}
+
+            {/* Display list of members already scheduled for the selected date and time slot */}
+            {!loadingMembersForDate && !fetchMembersError && selectedTimeSlot && membersForSelectedDate.length > 0 && (
                 <div className="scheduled-members-list"> {/* CSS class for scheduled members list */} 
-                     <h4>Bu tarihe kayıtlı üyeler:</h4>
+                     <h4>Bu tarihe kayıtlı üyeler ({selectedTimeSlot === 'morning' ? 'Sabah' : 'Akşam'}):</h4>
                     <ul>
                         {membersForSelectedDate.map(member => (
                             <li key={member.id}>{member.name} {member.surname}</li>
@@ -203,9 +241,12 @@ const CalendarManagement: React.FC = () => {
                     </ul>
                 </div>
             )}
-             {!loadingMembersForDate && !fetchMembersError && membersForSelectedDate.length === 0 && selectedDate && (
-                 <p>Bu tarihe kayıtlı üye bulunmamaktadır.</p>
+             {!loadingMembersForDate && !fetchMembersError && selectedTimeSlot && membersForSelectedDate.length === 0 && selectedDate && (
+                 <p>Seçilen tarih ve zaman dilimi için kayıtlı üye bulunmamaktadır.</p>
              )}
+              {!selectedTimeSlot && (
+                  <p>Lütfen ders üyelerini görmek için bir zaman dilimi seçin.</p>
+              )}
 
           </div>
         ) : (
@@ -218,8 +259,11 @@ const CalendarManagement: React.FC = () => {
           isVisible={showMemberSelectModal}
           onClose={handleCloseMemberSelectModal}
           onSave={handleSaveLesson}
-          // Pass current selected members for this date to pre-select in the modal
-          existingSelectedMemberIds={membersForSelectedDate.map(m => m.id)} // Pass existing members
+          // Pass current selected members for this date and time slot to pre-select in the modal
+          existingSelectedMemberIds={membersForSelectedDate.map(m => m.id)} 
+          // Pass selected date and time slot to the modal (if needed for context in modal logic, though not strictly required for selection) 
+          // selectedDate={selectedDate} 
+          // selectedTimeSlot={selectedTimeSlot}
       />
     </div>
   );
