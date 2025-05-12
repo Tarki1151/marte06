@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import type { Member } from './MemberList.tsx'; // Import Member interface
 import type { Package } from './PackageList.tsx'; // Import Package interface
 import { db } from '../firebaseConfig'; // Firestore db import
-import { collection, query, where, getDocs, doc, deleteDoc, addDoc, Timestamp, serverTimestamp } from 'firebase/firestore'; // Firestore functions
+import { collection, query, where, getDocs, doc, deleteDoc, addDoc, Timestamp, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore'; // Firestore functions
 import './MemberDetailModal.css'; // CSS dosyası
 import { formatDateToDDMMYY, formatDateToYYYYMMDD, formatPrice } from '../utils/formatters.ts'; // Date and Price formatters
 
@@ -12,9 +12,16 @@ interface AssignedPackage {
     packageId: string; // Reference to the actual package
     packageName: string; // Denormalized name
     startDate: Timestamp;
-    endDate: Timestamp; // Calculated
-    lessonsRemaining?: number | null; // If applicable
+    endDate: Timestamp | null; // Calculated, null olabilir
+    lessonsRemaining?: number | null; // If applicable (initial from package, will be updated)
     assignedAt: Timestamp;
+    totalLessonCount?: number; // Added: Total lessons from the package
+    packagePrice?: number; // Added: Price from the package
+    autoPaymentId?: string; // Added: ID of the automatically created payment, if any
+    // Calculated values
+    attendedLessons: number; // Calculated based on attendance
+    calculatedRemainingLessons: number; // Calculated based on total and attended lessons
+    outstandingBalance: number; // Calculated based on price, total lessons, and remaining lessons
 }
 
 interface Payment {
@@ -61,10 +68,87 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
         try {
             const assignedPackagesRef = collection(db, 'members', member.id, 'assignedPackages');
             const querySnapshot = await getDocs(assignedPackagesRef);
-            const assignedPackagesData: AssignedPackage[] = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data() as Omit<AssignedPackage, 'id'>
-            }));
+            const assignedPackagesData: AssignedPackage[] = [];
+
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.data();
+                const assignedPackage: AssignedPackage = {
+                    id: docSnap.id,
+                    packageId: data.packageId,
+                    packageName: data.packageName,
+                    startDate: data.startDate,
+                    endDate: data.endDate || null, // Null kontrolü
+                    lessonsRemaining: data.lessonsRemaining || null,
+                    assignedAt: data.assignedAt,
+                    autoPaymentId: data.autoPaymentId || undefined, // Include autoPaymentId
+                    totalLessonCount: undefined,
+                    packagePrice: undefined,
+                    attendedLessons: 0, // Varsayılan değer
+                    calculatedRemainingLessons: 0, // Varsayılan değer
+                    outstandingBalance: 0, // Varsayılan değer
+                };
+
+                // Fetch package details to get total lesson count and price
+                try {
+                    const packageRef = doc(db, 'packages', assignedPackage.packageId);
+                    const packageDocSnap = await getDoc(packageRef);
+
+                    if (packageDocSnap.exists()) {
+                        const packageData = packageDocSnap.data() as Package;
+                        assignedPackage.totalLessonCount = packageData.lessonCount;
+                        assignedPackage.packagePrice = packageData.price;
+                    } else {
+                        console.warn(`Package with ID ${assignedPackage.packageId} not found.`);
+                    }
+                } catch (packageError: any) {
+                    console.error(`Error fetching package ${assignedPackage.packageId}:`, packageError);
+                }
+
+                // --- Fetch attendance records for this member and this package's start date ---
+                let attendedLessonsCount = 0;
+                if (assignedPackage.startDate) {
+                    try {
+                        const lessonsRef = collection(db, 'lessons');
+                        const attendanceQuery = query(
+                            lessonsRef,
+                            where('memberIds', 'array-contains', member.id),
+                            where('date', '>=', assignedPackage.startDate) // Lessons on or after package start date
+                            // TODO: Add filter for end date if applicable and desired
+                        );
+                        const attendanceSnapshot = await getDocs(attendanceQuery);
+                        attendedLessonsCount = attendanceSnapshot.size;
+                    } catch (attendanceError: any) {
+                        console.error(`Error fetching attendance for package ${assignedPackage.id}:`, attendanceError);
+                    }
+                }
+                assignedPackage.attendedLessons = attendedLessonsCount;
+                // --- End Fetch attendance records ---
+
+                // --- Calculate remaining lessons ---
+                assignedPackage.calculatedRemainingLessons =
+                    assignedPackage.totalLessonCount !== undefined
+                        ? Math.max(0, assignedPackage.totalLessonCount - assignedPackage.attendedLessons)
+                        : assignedPackage.lessonsRemaining !== null && assignedPackage.lessonsRemaining !== undefined
+                        ? assignedPackage.lessonsRemaining
+                        : 0; // Fallback to lessonsRemaining if totalLessonCount is missing
+                // --- End Calculate remaining lessons ---
+
+                // --- Calculate outstanding balance ---
+                if (
+                    assignedPackage.packagePrice != null &&
+                    assignedPackage.totalLessonCount != null &&
+                    assignedPackage.totalLessonCount > 0
+                ) {
+                    const pricePerLesson = assignedPackage.packagePrice / assignedPackage.totalLessonCount;
+                    assignedPackage.outstandingBalance = pricePerLesson * assignedPackage.calculatedRemainingLessons;
+                } else {
+                    assignedPackage.outstandingBalance = 0; // If price or total lessons are unknown, balance is 0
+                }
+                // --- End Calculate outstanding balance ---
+
+                assignedPackagesData.push(assignedPackage);
+            }
+
             // Sort by assigned date (optional)
             assignedPackagesData.sort((a, b) => b.assignedAt.toDate().getTime() - a.assignedAt.toDate().getTime());
             setAssignedPackages(assignedPackagesData);
@@ -109,8 +193,6 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                 id: doc.id,
                 ...doc.data() as Omit<Payment, 'id'>
             }));
-            // Sort by payment date
-
             // Sort by payment date (most recent first)
             paymentHistoryData.sort((a, b) => b.date.toDate().getTime() - a.date.toDate().getTime());
             setPaymentHistory(paymentHistoryData);
@@ -168,18 +250,59 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                 endDate: endDate ? Timestamp.fromDate(endDate) : null, // Save end date as Timestamp or null
                 lessonsRemaining: packageToAssign.lessonCount !== null && packageToAssign.lessonCount !== undefined ? packageToAssign.lessonCount : null, // Initial remaining lessons
                 assignedAt: serverTimestamp(), // Record assignment timestamp
+                totalLessonCount: packageToAssign.lessonCount,
+                packagePrice: packageToAssign.price,
+                // autoPaymentId will be added after payment is created
             };
 
             // Add to assignedPackages subcollection for the member
             const assignedPackagesRef = collection(db, 'members', member.id, 'assignedPackages');
-            await addDoc(assignedPackagesRef, assignedPackageData);
+            const newAssignedPackageRef = await addDoc(assignedPackagesRef, assignedPackageData);
 
             console.log('Paket atandı:', assignedPackageData);
 
-            // Clear assignment form and refresh assigned packages list
+            // --- Automatically Record Payment for the Package ---
+            let autoPaymentId: string | undefined = undefined;
+            if (packageToAssign.price !== null && packageToAssign.price !== undefined && packageToAssign.price > 0) {
+                try {
+                    const paymentData = {
+                        amount: packageToAssign.price,
+                        date: Timestamp.fromDate(new Date(assignedPackageStartDate)), // Payment date is the package start date
+                        recordedAt: serverTimestamp(), // Record creation timestamp
+                        // Optionally link payment to assigned package if needed for other logic
+                        // assignedPackageId: newAssignedPackageRef.id,
+                    };
+
+                    const paymentsRef = collection(db, 'members', member.id, 'payments');
+                    const newPaymentRef = await addDoc(paymentsRef, paymentData);
+                    autoPaymentId = newPaymentRef.id;
+
+                    console.log('Paket ödemesi otomatik kaydedildi:', paymentData);
+                } catch (paymentError: any) {
+                    console.error('Otomatik ödeme kaydetme hatası:', paymentError);
+                    // Decide how to handle payment recording errors during package assignment
+                }
+            }
+            // --- End Automatic Payment Recording ---
+
+            // Update the assigned package document with the autoPaymentId if a payment was created
+            if (autoPaymentId) {
+                try {
+                    const assignedPackageDocRef = doc(db, 'members', member.id, 'assignedPackages', newAssignedPackageRef.id);
+                    await updateDoc(assignedPackageDocRef, {
+                        autoPaymentId: autoPaymentId,
+                    });
+                    console.log('Assigned package updated with autoPaymentId:', autoPaymentId);
+                } catch (updateError: any) {
+                    console.error('Error updating assigned package with payment ID:', updateError);
+                }
+            }
+
+            // Clear assignment form and refresh assigned packages list and payment history
             setSelectedPackageToAssign('');
             setAssignedPackageStartDate(formatDateToYYYYMMDD(new Date())); // Reset start date to today
-            fetchAssignedPackages(); // Re-fetch assigned packages to update the list
+            fetchAssignedPackages(); // Re-fetch assigned packages to update the list with payment ID and calculations
+            fetchPaymentHistory(); // Re-fetch payment history to update the list
         } catch (error: any) {
             console.error('Paket atama hatası:', error);
             setAssignError('Paket atanırken bir hata oluştu: ' + error.message);
@@ -227,9 +350,53 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
         }
     };
 
-    // TODO: Add logic for deleting an assigned package or payment
+    // Handle deleting an assigned package
+    const handleDeleteAssignedPackage = async (assignedPackageId: string) => {
+        if (!window.confirm('Bu paketi silmek istediğinize emin misiniz? Bu pakete ait otomatik ödeme kaydı da silinecektir.')) {
+            return;
+        }
 
-    // TODO: Add logic for calculating balance/remaining sessions
+        setLoadingAssignedPackages(true); // Show loading while deleting
+        setFetchError(null); // Clear previous errors
+        try {
+            const assignedPackageRef = doc(db, 'members', member.id, 'assignedPackages', assignedPackageId);
+            const assignedPackageDoc = await getDoc(assignedPackageRef);
+
+            if (assignedPackageDoc.exists()) {
+                const assignedPackageData = assignedPackageDoc.data() as AssignedPackage;
+                const autoPaymentId = assignedPackageData.autoPaymentId;
+
+                // Delete the assigned package document
+                await deleteDoc(assignedPackageRef);
+                console.log('Assigned package deleted:', assignedPackageId);
+
+                // If there was an automatically created payment, delete it as well
+                if (autoPaymentId) {
+                    try {
+                        const paymentRef = doc(db, 'members', member.id, 'payments', autoPaymentId);
+                        await deleteDoc(paymentRef);
+                        console.log('Associated automatic payment deleted:', autoPaymentId);
+                    } catch (paymentDeleteError: any) {
+                        console.error('Otomatik ödeme silme hatası:', paymentDeleteError);
+                    }
+                }
+
+                // Refresh the assigned packages list and payment history
+                fetchAssignedPackages();
+                fetchPaymentHistory();
+            } else {
+                console.warn('Assigned package not found for deletion:', assignedPackageId);
+                setFetchError('Silinmek istenen atanmış paket bulunamadı.');
+                fetchAssignedPackages();
+                fetchPaymentHistory();
+            }
+        } catch (error: any) {
+            console.error('Atanmış paket silme hatası:', error);
+            setFetchError('Atanmış paket silinirken bir hata oluştu: ' + error.message);
+        } finally {
+            // Loading will be set to false by fetchAssignedPackages
+        }
+    };
 
     if (!isVisible || !member) return null; // Don't render if not visible or no member
 
@@ -255,9 +422,25 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                         <ul>
                             {assignedPackages.map(assignedPkg => (
                                 <li key={assignedPkg.id}> {/* Use assigned package ID */}
-                                    {assignedPkg.packageName} ({formatDateToDDMMYY(assignedPkg.startDate)} - {formatDateToDDMMYY(assignedPkg.endDate)})
-                                    {assignedPkg.lessonsRemaining != null && ` | Kalan Ders: ${assignedPkg.lessonsRemaining}`}
-                                    {/* TODO: Add Delete button for assigned package */}
+                                    <div> {/* Use a div to structure the package info and delete button */}
+                                        <span> {/* Wrap main text content in a span */}
+                                            {assignedPkg.packageName} ({formatDateToDDMMYY(assignedPkg.startDate)} - {assignedPkg.endDate ? formatDateToDDMMYY(assignedPkg.endDate) : 'Belirsiz'}) {/* Handle potentially null end date */}
+                                        </span>
+                                        <br /> {/* Add a line break for details */}
+                                        {assignedPkg.totalLessonCount != null && `Toplam Ders: ${assignedPkg.totalLessonCount}`}
+                                        {assignedPkg.packagePrice != null && ` | Fiyat: ${formatPrice(assignedPkg.packagePrice)} TL`}
+                                        {/* Display calculated values */}
+                                        {assignedPkg.attendedLessons != null && ` | Geldiği Ders: ${assignedPkg.attendedLessons}`}
+                                        {assignedPkg.calculatedRemainingLessons != null && ` | Kalan Ders: ${assignedPkg.calculatedRemainingLessons}`}
+                                        {assignedPkg.outstandingBalance != null && ` | Kalan Borç: ${formatPrice(assignedPkg.outstandingBalance)} TL`}
+                                    </div>
+                                    <button
+                                        className="delete-package-button"
+                                        onClick={() => handleDeleteAssignedPackage(assignedPkg.id)}
+                                        aria-label={`Delete package ${assignedPkg.packageName}`}
+                                    >
+                                        X
+                                    </button>
                                 </li>
                             ))}
                         </ul>
@@ -294,8 +477,7 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                             />
                         </div>
 
-                        {assignError
-&& <p style={{ color: 'red' }}>{assignError}</p>}
+                        {assignError && <p style={{ color: 'red' }}>{assignError}</p>}
 
                         <button onClick={handleAssignPackage} disabled={assigningPackage || !selectedPackageToAssign || !assignedPackageStartDate}> {/* Disable if assigning or fields are empty */}
                             {assigningPackage ? 'Atanıyor...' : 'Paket Ata'}
@@ -350,12 +532,14 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                     </div>
                 </div>
 
-                {/* TODO: Balance/Remaining Sessions Info */}
-                <div className="balance-info"> {/* CSS for styling */}
+                {/* TODO: Balance/Remaining Sessions Info - This section might become less necessary if displayed per package */}
+                {/* 
+                <div className="balance-info"> 
                     <h4>Durum</h4>
                     <p>Kalan Ders: Hesaplama yapılacak</p>
                     <p>Kalan Borç: Hesaplama yapılacak</p>
                 </div>
+                */}
 
                 <button onClick={onClose} className="close-button">Kapat</button> {/* CSS for styling */}
             </div>
