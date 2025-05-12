@@ -5,49 +5,65 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #f8f8f8; /* Arkaplan rengi */
+  background-color: #f8f8f8;
   display: flex;
-  justify-content: space-around; /* Linkleri eşit aralıklarla yay */
+  justify-content: space-around;
   padding: 10px 0;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Üste gölge */
-  z-index: 1000; /* Diğer içeriklerin üstünde olması için */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
 }
 
 .nav-link {
   display: flex;
-  flex-direction: row; /* İkon ve yazıyı yatay sırala */
-  align-items: center; /* Dikeyde ortala */
+  flex-direction: row;
+  align-items: center;
   text-decoration: none;
-  color: #333; /* Link rengi */
+  color: #333;
   font-size: 12px;
-  padding: 5px 10px; /* Tıklanabilir alanı artır */
-  border-radius: 5px; /* Hafif yuvarlak köşeler */
-  /* Button elementi için varsayılan border ve background kaldırılır */
+  padding: 5px 10px;
+  border-radius: 5px;
   border: none;
   background: none;
   cursor: pointer;
 }
 
 .nav-link:hover {
-  background-color: #e9e9e9; /* Hover arkaplan */
-  color: #007bff; /* Hover rengi */
+  background-color: #e9e9e9;
+  color: #007bff;
 }
 
 .nav-icon {
-  margin-right: 5px; /* İkon ile yazı arasına boşluk */
-  font-size: 18px; /* İkon boyutu (isteğe bağlı) */
+  margin-right: 5px;
+  font-size: 18px;
 }
 
 .nav-link span {
-  /* margin-top: 4px; */ /* Artık dikey sıralanmıyor, bu stile gerek kalmadı */
+  /* Keep this rule, it will be overridden in the media query */
 }
 
 /* Logout butonu stili */
 .logout-link-button {
-    color: #dc3545; /* Kırmızı renk */
+    color: #dc3545;
 }
 
 .logout-link-button:hover {
-    color: #c82333; /* Koyu kırmızı hover */
-    background-color: #e9e9e9; /* Diğer linklerle aynı hover arkaplanı */
+    color: #c82333;
+    background-color: #e9e9e9;
+}
+
+/* --- Responsive Ayarlar --- */
+@media (max-width: 768px) { /* Tablet ve mobil görünüm için */
+  .nav-link {
+    flex-direction: column; /* İkon ve yazıyı alt alta sırala */
+    padding: 8px 5px; /* Dikey padding artır, yatay azalt */
+  }
+
+  .nav-icon {
+    margin-right: 0; /* İkonun sağındaki boşluğu kaldır */
+    margin-bottom: 3px; /* İkonun altına biraz boşluk ekle */
+  }
+
+  .nav-link span {
+    display: none; /* Yazıları gizle */
+  }
 }

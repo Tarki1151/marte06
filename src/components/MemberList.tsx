@@ -1,32 +1,33 @@
 // src/components/MemberList.tsx
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, doc, deleteDoc, type DocumentData, Timestamp } from 'firebase/firestore'; // Timestamp importu eklendi
+import { collection, getDocs, doc, deleteDoc, type DocumentData, Timestamp } from 'firebase/firestore';
 
-export interface Member { // Export edildi
+export interface Member {
   id: string;
   name: string;
   surname: string;
   email: string;
   phone?: string;
-  birthDate?: Timestamp; // birthYear yerine birthDate (Timestamp)
+  birthDate?: Timestamp;
   parentName?: string;
   parentPhone?: string;
-  createdAt: Timestamp; // any yerine Timestamp
-  notes?: string; // Not alanı eklendi
+  createdAt: Timestamp;
+  notes?: string;
 }
 
 interface MemberListProps {
-  refreshTrigger: boolean; // Listeyi yenilemek için kullanılacak trigger
-  onMemberDeleted: () => void; // Üye silindiğinde çağrılacak callback
-  onMemberEdited: (member: Member) => void; // Üye düzenlenmek istendiğinde çağrılacak callback
+  refreshTrigger: boolean;
+  onMemberDeleted: () => void;
+  onMemberEdited: (member: Member) => void;
+  onMemberClick: (member: Member) => void; // Yeni callback prop'u
 }
 
-const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted, onMemberEdited }) => {
+const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted, onMemberEdited, onMemberClick }) => {
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true); // Yüklenme state'i
-  const [error, setError] = useState<string | null>(null); // Hata state'i
-  const [deletingId, setDeletingId] = useState<string | null>(null); // Silinen üyenin ID'si
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -83,17 +84,26 @@ const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted
     }
   };
 
+   // Handle click on the member list item (to open detail modal)
+  const handleMemberItemClick = (member: Member) => {
+      onMemberClick(member); // Call the parent's member click handler
+  };
+
   return (
     <div className="member-list">
       <h3>Kayıtlı Üyeler</h3>
       <ul>
         {members.map(member => (
-          <li key={member.id} className="member-list-item card">
+          <li 
+            key={member.id} 
+            className="member-list-item card clickable" /* Add clickable class for styling */
+            onClick={() => handleMemberItemClick(member)} /* Add onClick for list item */
+          >
             <span>
               {member.name} {member.surname} - {member.phone || 'Telefon Yok'}
               {member.notes && ` - Not: ${member.notes}`}
-            </span> {/* Corrected template literal */}
-            <div className="member-actions">
+            </span>
+            <div className="actions" onClick={(e) => e.stopPropagation()}> {/* Stop click propagation here */} 
                 <button onClick={() => handleEditClick(member)} title="Düzenle">✏️</button>
                 <button onClick={() => handleDeleteClick(member.id)} disabled={deletingId === member.id} title="Sil">
                     {deletingId === member.id ? '...' : '🗑️'}

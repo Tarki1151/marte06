@@ -20,7 +20,7 @@ export const formatDateToDDMMYY = (date: Date | Timestamp | null | undefined): s
   } else if (date instanceof Date) {
     jsDate = date;
   } else {
-      return ''; // Handle other potential input types
+    return ''; // Handle other potential input types
   }
 
   const day = jsDate.getDate().toString().padStart(2, '0');
@@ -28,4 +28,24 @@ export const formatDateToDDMMYY = (date: Date | Timestamp | null | undefined): s
   const year = jsDate.getFullYear().toString().slice(-2); // Get last two digits of the year
 
   return `${day}/${month}/${year}`;
+};
+
+// Formats a Date or Timestamp object to yyyy-mm-dd string
+export const formatDateToYYYYMMDD = (date: Date | Timestamp | null | undefined): string => {
+  if (!date) return '';
+
+  let jsDate: Date;
+  if (date instanceof Timestamp) {
+    jsDate = date.toDate();
+  } else if (date instanceof Date) {
+    jsDate = date;
+  } else {
+    return ''; // Handle other potential input types
+  }
+
+  const year = jsDate.getFullYear().toString();
+  const month = (jsDate.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
+  const day = jsDate.getDate().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 };
