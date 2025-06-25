@@ -1,29 +1,47 @@
 // src/components/AddMemberForm.tsx
-import React, { useState } from 'react';
-import { db } from '../firebaseConfig'; // Firestore db objesini import et
-import { collection, addDoc } from 'firebase/firestore'; // Firestore fonksiyonlarını import et
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebaseConfig';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import type { Member } from '../components/MemberList';
+import { Timestamp } from 'firebase/firestore'; // Timestamp import eklendi
 
-interface AddMemberFormProps {
-  onMemberAdded: () => void; // Üye eklendiğinde çağrılacak fonksiyon
+interface InitialMemberData {
+    id?: string;
+    name?: string;
+    surname?: string;
+    birthDate?: string | Date | Timestamp;
+    phone?: string;
+    email?: string;
+    address?: string;
+    healthIssues?: string;
+    medications?: string;
+    injuries?: string;
+    packageChoice?: string;
+    otherPackageDetail?: string;
+    parentName?: string;
+    parentPhone?: string;
+    notes?: string;
 }
 
-// Helper function to generate years for the select dropdown
+interface AddMemberFormProps {
+    onMemberAdded: () => void;
+    onMemberUpdated?: () => void;
+    editingMember?: Member | null;
+    initialData?: InitialMemberData | null;
+}
+
 const generateYears = () => {
-  const currentYear = new Date().getFullYear();
-  const years = [];
-  // Assume members are born in the last 100 years, adjust as needed
-  for (let i = currentYear; i >= currentYear - 100; i--) {
-    years.push(i);
-  }
-  return years;
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear; i >= currentYear - 100; i--) {
+        years.push(i);
+    }
+    return years;
 };
 
-// Helper function to generate days for a given month and year
 const generateDays = (year: number | '', month: number | '') => {
     if (year === '' || month === '') return [];
-
-    // Months are 0-indexed in JavaScript Date object
-    const date = new Date(year, month, 0); // Day 0 gives the last day of the previous month
+    const date = new Date(year as number, month as number, 0);
     const daysInMonth = date.getDate();
     const days = [];
     for (let i = 1; i <= daysInMonth; i++) {
@@ -32,211 +50,310 @@ const generateDays = (year: number | '', month: number | '') => {
     return days;
 };
 
-const AddMemberForm: React.FC<AddMemberFormProps> = ({ onMemberAdded }) => {
-  const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  // Doğum tarihi için gün, ay, yıl state'leri
-  const [birthDay, setBirthDay] = useState<number | '' >('');
-  const [birthMonth, setBirthMonth] = useState<number | '' >('');
-  const [birthYear, setBirthYear] = useState<number | '' >('');
+const AddMemberForm: React.FC<AddMemberFormProps> = ({ onMemberAdded, onMemberUpdated, editingMember, initialData }) => {
+    const [name, setName] = useState('');
+    const [surname, setSurname] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [birthDay, setBirthDay] = useState<number | ''>('');
+    const [birthMonth, setBirthMonth] = useState<number | ''>('');
+    const [birthYear, setBirthYear] = useState<number | ''>('');
+    const [parentName, setParentName] = useState('');
+    const [parentPhone, setParentPhone] = useState('');
+    const [notes, setNotes] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const [parentName, setParentName] = useState(''); // Ebeveyn adı state'i
-  const [parentPhone, setParentPhone] = useState(''); // Ebeveyn telefon state'i
+    useEffect(() => {
+        const dataToFill = editingMember || initialData;
 
-  const [loading, setLoading] = useState(false); // Yüklenme state'i
-  const [error, setError] = useState<string | null>(null); // Hata state'i
+        if (dataToFill) {
+            setName(dataToFill.name || '');
+            setSurname(dataToFill.surname || '');
+            setEmail(dataToFill.email || '');
+            setPhone(dataToFill.phone || '');
 
-  // 18 yaşından küçük olup olmadığını kontrol et (Gün, Ay, Yıl kullanarak)
-  const isMinor = (() => {
-      if (birthDay === '' || birthMonth === '' || birthYear === '') return false; // Tarih tam girilmediyse küçük değildir varsay
+            if (dataToFill.birthDate) {
+                let dateObj: Date | null = null;
+                if (dataToFill.birthDate instanceof Timestamp) {
+                    dateObj = dataToFill.birthDate.toDate();
+                } else if (dataToFill.birthDate instanceof Date) {
+                    dateObj = dataToFill.birthDate;
+                } else if (typeof dataToFill.birthDate === 'string') {
+                    try {
+                        const parts = dataToFill.birthDate.split('-');
+                        if (parts.length === 3) {
+                            dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        } else {
+                            console.warn('Invalid birth date format:', dataToFill.birthDate);
+                        }
+                    } catch (e) {
+                        console.error('Birth date parse error:', e);
+                    }
+                }
 
-      const today = new Date();
-      const birthDate = new Date(birthYear, birthMonth - 1, birthDay); // Month is 0-indexed
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (dateObj && !isNaN(dateObj.getTime())) {
+                    setBirthDay(dateObj.getDate());
+                    setBirthMonth(dateObj.getMonth() + 1);
+                    setBirthYear(dateObj.getFullYear());
+                } else {
+                    console.warn('Invalid birth date:', dataToFill.birthDate);
+                    setBirthDay('');
+                    setBirthMonth('');
+                    setBirthYear('');
+                }
+            } else {
+                setBirthDay('');
+                setBirthMonth('');
+                setBirthYear('');
+            }
 
-      // Eğer doğum ayı şu anki aydan büyükse veya doğum ayı şu anki ay ile aynı ama doğum günü şu anki günden büyükse henüz yaşını doldurmamıştır.
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-      }
-      return age < 18;
-  })();
+            setParentName(dataToFill.parentName || '');
+            setParentPhone(dataToFill.parentPhone || '');
+            setNotes(dataToFill.notes || '');
+        } else {
+            setName('');
+            setSurname('');
+            setEmail('');
+            setPhone('');
+            setBirthDay('');
+            setBirthMonth('');
+            setBirthYear('');
+            setParentName('');
+            setParentPhone('');
+            setNotes('');
+        }
+    }, [initialData, editingMember]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    const isMinor = (() => {
+        if (birthDay === '' || birthMonth === '' || birthYear === '') return false;
+        const today = new Date();
+        const birthDate = new Date(birthYear as number, (birthMonth as number) - 1, birthDay as number);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age < 18;
+    })();
 
-    // Doğum tarihi tam girildi mi kontrol et
-    if (birthDay === '' || birthMonth === '' || birthYear === '') {
-        setError('Lütfen doğum tarihini tam olarak girin (Gün, Ay, Yıl).');
-        setLoading(false);
-        return;
-    }
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
 
-    // 18 yaşından küçükse ve ebeveyn bilgileri boşsa hata ver
-    if (isMinor && (!parentName || !parentPhone)) {
-      setError('18 yaşından küçük üyeler için ebeveyn adı ve telefon bilgileri gereklidir.');
-      setLoading(false);
-      return;
-    }
+        if (birthDay === '' || birthMonth === '' || birthYear === '') {
+            if (!(editingMember?.birthDate || initialData?.birthDate)) {
+                setError('Please enter the full birth date (Day, Month, Year).');
+                setLoading(false);
+                return;
+            }
+        }
 
-    try {
-      // Firestore'a yeni üye ekle
-      const docRef = await addDoc(collection(db, 'members'), {
-        name: name,
-        surname: surname,
-        email: email,
-        phone: phone,
-        // Doğum tarihini Date objesi olarak kaydet
-        birthDate: new Date(birthYear, birthMonth - 1, birthDay), // Ay 0-indexed
-        parentName: isMinor ? parentName : null,
-        parentPhone: isMinor ? parentPhone : null,
-        createdAt: new Date(),
-      });
-      console.log('Yeni üye eklendi, Belge ID:', docRef.id);
+        if (isMinor && (!parentName || !parentPhone)) {
+            setError('Parent name and phone are required for members under 18.');
+            setLoading(false);
+            return;
+        }
 
-      // Formu temizle
-      setName('');
-      setSurname('');
-      setEmail('');
-      setPhone('');
-      setBirthDay('');
-      setBirthMonth('');
-      setBirthYear('');
-      setParentName('');
-      setParentPhone('');
+        let birthDateObj: Date | null = null;
+        if (birthDay !== '' && birthMonth !== '' && birthYear !== '') {
+            birthDateObj = new Date(birthYear as number, (birthMonth as number) - 1, birthDay as number);
+            if (isNaN(birthDateObj.getTime())) {
+                setError('Invalid birth date entered.');
+                setLoading(false);
+                return;
+            }
+        }
 
-      onMemberAdded(); // Üye eklendiğinde callback çağır
+        try {
+            const memberDataToSave = {
+                name,
+                surname,
+                email,
+                phone,
+                birthDate: birthDateObj,
+                parentName: isMinor ? parentName : null,
+                parentPhone: isMinor ? parentPhone : null,
+                notes,
+            };
 
-    } catch (error: any) {
-      console.error('Üye ekleme hatası:', error);
-      setError('Üye eklenirken bir hata oluştu: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+            if (editingMember) {
+                const memberRef = doc(db, 'members', editingMember.id);
+                await updateDoc(memberRef, {
+                    ...memberDataToSave,
+                    updatedAt: Timestamp.now(),
+                });
+                console.log('Member updated, Document ID:', editingMember.id);
+                onMemberUpdated?.();
+            } else {
+                const docRef = await addDoc(collection(db, 'members'), {
+                    ...memberDataToSave,
+                    createdAt: Timestamp.now(),
+                    updatedAt: Timestamp.now(),
+                });
+                console.log('New member added, Document ID:', docRef.id);
+                onMemberAdded();
+            }
 
-  const years = generateYears();
-  // Seçilen yıl ve aya göre günleri oluştur
-  const days = generateDays(birthYear, birthMonth);
-  const months = [
-      { value: 1, label: 'Ocak' }, { value: 2, label: 'Şubat' }, { value: 3, label: 'Mart' },
-      { value: 4, label: 'Nisan' }, { value: 5, label: 'Mayıs' }, { value: 6, label: 'Haziran' },
-      { value: 7, label: 'Temmuz' }, { value: 8, label: 'Ağustos' }, { value: 9, label: 'Eylül' },
-      { value: 10, label: 'Ekim' }, { value: 11, label: 'Kasım' }, { value: 12, label: 'Aralık' },
-  ];
+            setName('');
+            setSurname('');
+            setEmail('');
+            setPhone('');
+            setBirthDay('');
+            setBirthMonth('');
+            setBirthYear('');
+            setParentName('');
+            setParentPhone('');
+            setNotes('');
+        } catch (error: any) {
+            console.error(editingMember ? 'Member update error:' : 'Member add error:', error);
+            setError(editingMember ? `Error updating member: ${error.message}` : `Error adding member: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const years = generateYears();
+    const days = generateDays(birthYear, birthMonth);
+    const months = [
+        { value: 1, label: 'January' },
+        { value: 2, label: 'February' },
+        { value: 3, label: 'March' },
+        { value: 4, label: 'April' },
+        { value: 5, label: 'May' },
+        { value: 6, label: 'June' },
+        { value: 7, label: 'July' },
+        { value: 8, label: 'August' },
+        { value: 9, label: 'September' },
+        { value: 10, label: 'October' },
+        { value: 11, label: 'November' },
+        { value: 12, label: 'December' },
+    ];
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="name">Ad:</label>
-        <input
-          type="text"
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="surname">Soyad:</label>
-        <input
-          type="text"
-          id="surname"
-          value={surname}
-          onChange={(e) => setSurname(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="email">Email:</label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="phone">Telefon:</label>
-        <input
-          type="tel"
-          id="phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>Doğum Tarihi:</label>
-        <div className="birthdate-selects"> {/* CSS class'ı kullanıldı */} 
-          <select
-            value={birthDay}
-            onChange={(e) => setBirthDay(parseInt(e.target.value) || '')}
-            required
-          >
-            <option value="">Gün</option>
-            {days.map(day => <option key={day} value={day}>{day}</option>)}
-          </select>
-
-          <select
-            value={birthMonth}
-            onChange={(e) => setBirthMonth(parseInt(e.target.value) || '')}
-            required
-          >
-            <option value="">Ay</option>
-            {months.map(month => <option key={month.value} value={month.value}>{month.label}</option>)}
-          </select>
-
-          <select
-            value={birthYear}
-            onChange={(e) => setBirthYear(parseInt(e.target.value) || '')}
-            required
-          >
-            <option value="">Yıl</option>
-            {years.map(year => <option key={year} value={year}>{year}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* 18 yaşından küçükse ebeveyn bilgileri alanlarını göster */}
-      {isMinor && (
-        <>
-          <h4>Ebeveyn Bilgileri</h4>
-          <div>
-            <label htmlFor="parentName">Ebeveyn Adı Soyadı:</label>
-            <input
-              type="text"
-              id="parentName"
-              value={parentName}
-              onChange={(e) => setParentName(e.target.value)}
-              required={isMinor}
-            />
-          </div>
-          <div>
-            <label htmlFor="parentPhone">Ebeveyn Telefon:</label>
-            <input
-              type="tel"
-              id="parentPhone"
-              value={parentPhone}
-              onChange={(e) => setParentPhone(e.target.value)}
-              required={isMinor}
-            />
-          </div>
-        </>
-      )}
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <button type="submit" disabled={loading}>
-        {loading ? 'Ekleniyor...' : 'Kaydet'}
-      </button>
-    </form>
-  );
+    return (
+        <form onSubmit={handleSubmit}>
+            <h3>{editingMember ? 'Edit Member' : initialData ? 'Add Member from Scanned Data' : 'Add New Member'}</h3>
+            <div>
+                <label htmlFor="name">Name:</label>
+                <input
+                    type="text"
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                />
+            </div>
+            <div>
+                <label htmlFor="surname">Surname:</label>
+                <input
+                    type="text"
+                    id="surname"
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                    required
+                />
+            </div>
+            <div>
+                <label htmlFor="email">Email:</label>
+                <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
+            </div>
+            <div>
+                <label htmlFor="phone">Phone:</label>
+                <input
+                    type="tel"
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                />
+            </div>
+            <div>
+                <label>Birth Date:</label>
+                <div className="birthdate-selects">
+                    <select
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(parseInt(e.target.value) || '')}
+                        required
+                    >
+                        <option value="">Day</option>
+                        {days.map((day) => (
+                            <option key={day} value={day}>
+                                {day}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={birthMonth}
+                        onChange={(e) => setBirthMonth(parseInt(e.target.value) || '')}
+                        required
+                    >
+                        <option value="">Month</option>
+                        {months.map((month) => (
+                            <option key={month.value} value={month.value}>
+                                {month.label}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={birthYear}
+                        onChange={(e) => setBirthYear(parseInt(e.target.value) || '')}
+                        required
+                    >
+                        <option value="">Year</option>
+                        {years.map((year) => (
+                            <option key={year} value={year}>
+                                {year}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label htmlFor="notes">Notes:</label>
+                <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            </div>
+            {isMinor && (
+                <>
+                    <h4>Parent Information</h4>
+                    <div>
+                        <label htmlFor="parentName">Parent Name:</label>
+                        <input
+                            type="text"
+                            id="parentName"
+                            value={parentName}
+                            onChange={(e) => setParentName(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="parentPhone">Parent Phone:</label>
+                        <input
+                            type="tel"
+                            id="parentPhone"
+                            value={parentPhone}
+                            onChange={(e) => setParentPhone(e.target.value)}
+                            required
+                        />
+                    </div>
+                </>
+            )}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <button type="submit" disabled={loading}>
+                {loading ? (editingMember ? 'Updating...' : 'Adding...') : editingMember ? 'Update Member' : 'Save'}
+            </button>
+            {editingMember && (
+                <button type="button" onClick={() => onMemberUpdated?.()} disabled={loading}>
+                    Cancel
+                </button>
+            )}
+        </form>
+    );
 };
 
 export default AddMemberForm;
