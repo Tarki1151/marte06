@@ -44,10 +44,6 @@ const BottomNavBar: React.FC = () => {
           <i className="nav-icon">📦</i>
           <span>Paketler</span>
         </Link>
-        <Link to="/branches" className="nav-link">
-          <i className="nav-icon">💪</i>
-          <span>Branşlar</span>
-        </Link>
         <Link to="/calendar" className="nav-link">
           <i className="nav-icon">📅</i>
           <span>Takvim</span>
