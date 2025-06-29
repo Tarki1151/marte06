@@ -4,17 +4,22 @@ import './Calendar.css'; // CSS dosyası
 
 interface CalendarProps {
   onDateSelect: (date: Date | null) => void; // Dışa seçilen tarihi bildirmek için callback
+  selectedDate?: Date | null; // selectedDate prop'u eklendi
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
+const Calendar: React.FC<CalendarProps> = ({ onDateSelect, selectedDate: initialSelectedDate }) => {
   const [currentDate, setCurrentDate] = useState(new Date()); // Takvimde görünen ay/yıl
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Kullanıcının seçtiği tarih
+
+    useEffect(() => {
+        setSelectedDate(initialSelectedDate || null);
+    }, [initialSelectedDate]);
 
   // currentDatetestiği zaman selectedDate'i sıfırlama (isteğe bağlı)
   useEffect(() => {
     setSelectedDate(null);
     onDateSelect(null);
-  }, [currentDate]);
+  }, [currentDate, onDateSelect]);
 
   const renderHeader = () => {
     const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',

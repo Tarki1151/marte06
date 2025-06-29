@@ -6,21 +6,6 @@ import MemberList from '../components/MemberList.tsx';
 import type { Member } from '../components/MemberList.tsx'; // Member tipi için import
 import MemberDetailModal from '../components/MemberDetailModal.tsx'; // MemberDetailModal importu eklendi
 
-// OCR sonucundan beklenen temel veri yapısı (Yer tutucu - Backend'den dönecek veri formatına göre ayarlanacak)
-interface ScannedFormData {
-    name?: string;
-    surname?: string;
-    birthDate?: string; // YYYY-MM-DD formatında string olabilir
-    phone?: string;
-    email?: string;
-    address?: string;
-    // Sağlık bilgileri ve paket seçimi gibi diğer alanlar buraya eklenecek
-    healthIssues?: string; // Örnek
-    medications?: string; // Örnek
-    injuries?: string; // Örnek
-    packageChoice?: string; // Örnek: '8'li Paket', '10'lu Paket' gibi
-    otherPackageDetail?: string; // Diğer seçeneği işaretlendiyse
-}
 
 const MemberManagement: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false); // Yeni üye formu gösterme/gizleme state'i
@@ -35,7 +20,6 @@ const MemberManagement: React.FC = () => {
     setShowAddForm(false); // Formu gizle
     setRefreshList(prev => !prev); // Listeyi yenile
     setEditingMember(null); // Düzenleme durumunu sıfırla
-    //setScannedMemberData(null); // Taranmış veriyi temizle - Kaldırıldı
   };
 
   // Üye silme başarılı olunca tetiklenir
@@ -50,7 +34,6 @@ const MemberManagement: React.FC = () => {
   const handleMemberEdited = (member: Member) => {
     setEditingMember(member); // Düzenlenen üyeyi state'e kaydet
     setShowAddForm(true); // Düzenleme formu için ekleme formunu göster
-    //setScannedMemberData(null); // Düzenleme moduna geçerken taranmış veriyi temizle - Kaldırıldı
     // TODO: Formu düzenlenecek üye bilgileriyle doldurma mantığı AddMemberForm componentinde olacak
   };
 
@@ -80,7 +63,6 @@ const MemberManagement: React.FC = () => {
           {!editingMember && !showAddForm && (
                <button onClick={() => {
                     setShowAddForm(true);
-                   // setScannedMemberData(null); // Manuel ekleme için taranmış veriyi temizle - Kaldırıldı
                }}>Yeni Üye Ekle</button>
           )}
 
@@ -89,7 +71,6 @@ const MemberManagement: React.FC = () => {
                 <button onClick={() => {
                      setShowAddForm(false);
                      setEditingMember(null);
-                     //setScannedMemberData(null); // Form kapatıldığında taranmış veriyi temizle - Kaldırıldı
                 }}>Formu Gizle</button>
            )}
 
@@ -103,7 +84,6 @@ const MemberManagement: React.FC = () => {
             // TODO: onMemberUpdated ve editingMember prop'ları AddMemberForm componentine eklenecek
             // onMemberUpdated={handleMemberUpdated}
             editingMember={editingMember} // Düzenleme modunda mevcut üye verisi
-            //initialData={scannedMemberData} // Tarama modunda taranan veri - Kaldırıldı
           />
         </div>
       )}
