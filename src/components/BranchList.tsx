@@ -4,11 +4,12 @@ import { db } from '../firebaseConfig';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 //import type { DocumentData } from 'firebase/firestore'; // Belge verisi tipi - KULLANILMIYOR
 
-interface Branch {
+export interface Branch {
     id: string;
     name: string;
     address: string;
     phone: string;
+    description: string; // Added description
 }
 
 const BranchList: React.FC = () => {

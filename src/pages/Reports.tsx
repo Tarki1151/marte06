@@ -68,7 +68,7 @@ const Reports: React.FC = () => {
     }, []);
 
 
-    const fetchAttendanceData = async (memberId: string, month: number, year: number, startDate: string | null = null, endDate: string | null = null) => {
+    const fetchAttendanceData = useCallback(async (memberId: string, month: number, year: number, startDate: string | null = null, endDate: string | null = null) => {
         setLoading(true);
         setError(null);
         setAttendanceData([]);
@@ -122,7 +122,7 @@ const Reports: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const handleMemberSelect = (member: Member) => {
         setSelectedMember(member);
@@ -241,14 +241,24 @@ const Reports: React.FC = () => {
                 ) : (
                     <div className="month-year-selection"> {/* .card class'ı eklendi */} 
                         <label htmlFor="month">Ay:</label>
-                        <select id="month" value={selectedMonth} onChange={handleMonthChange}>
+                        <select 
+                            id="month" 
+                            value={selectedMonth} 
+                            onChange={handleMonthChange}
+                            disabled={useDateRange} // Disable when using date range
+                        >
                             {monthOptions.map(month => (
                                 <option key={month.value} value={month.value}>{month.label}</option>
                             ))}
                         </select>
 
                         <label htmlFor="year">Yıl:</label>
-                        <select id="year" value={selectedYear} onChange={handleYearChange}>
+                        <select 
+                            id="year" 
+                            value={selectedYear} 
+                            onChange={handleYearChange}
+                            disabled={useDateRange} // Disable when using date range
+                        >
                             {yearOptions.map(year => (
                                 <option key={year} value={year}>{year}</option>
                             ))}

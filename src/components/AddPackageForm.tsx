@@ -18,8 +18,8 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
   const [lessonCount, setLessonCount] = useState<number | '' >('');
   const [durationDays, setDurationDays] = useState<number | '' >('');
   const [isActive, setIsActive] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false); // loading state
+  const [error, setError] = useState<string | null>(null); // error state
 
   // Populate form when editingPackage changes
   useEffect(() => {
@@ -27,8 +27,8 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
       setName(editingPackage.name);
       setDescription(editingPackage.description || '');
       setPrice(editingPackage.price);
-      setLessonCount(editingPackage.lessonCount === null ? '' : editingPackage.lessonCount); // Handle null
-      setDurationDays(editingPackage.durationDays === null ? '' : editingPackage.durationDays); // Handle null
+      setLessonCount(editingPackage.lessonCount === null || editingPackage.lessonCount === undefined ? '' : editingPackage.lessonCount); // Handle null or undefined
+      setDurationDays(editingPackage.durationDays === null || editingPackage.durationDays === undefined ? '' : editingPackage.durationDays); // Handle null or undefined
       setIsActive(editingPackage.isActive);
     } else {
       // Clear form for new package
@@ -151,7 +151,7 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
           type="number"
           id="packageLessonCount"
           value={lessonCount}
-          onChange={(e) => setLessonCount(e.target.value === '' ? '' : Number(e.target.value))}
+          onChange={(e) => setLessonCount(e.target.value === '' ? '' : Number(e.target.value) || undefined)}
           min="0"
         />
       </div>
@@ -161,7 +161,7 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
           type="number"
           id="packageDurationDays"
           value={durationDays}
-          onChange={(e) => setDurationDays(e.target.value === '' ? '' : Number(e.target.value))}
+          onChange={(e) => setDurationDays(e.target.value === '' ? '' : Number(e.target.value) || undefined)}
           min="0"
         />
       </div>
