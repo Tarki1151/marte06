@@ -4,7 +4,7 @@ import { auth } from '../firebaseConfig'; // Firebase auth objesini import et
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'; // Giriş fonksiyonlarını ve Google Auth sağlayıcısını import et
 import { useNavigate } from 'react-router-dom';
 // import './LoginForm.css'; // CSS dosyasını import et - Kaldırıldı
-import googleLogo from '/public/images/google-logo.png'; // Google logosunu import et
+import googleLogo from '../images/google-logo.png'; // Google logosunu import et
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
