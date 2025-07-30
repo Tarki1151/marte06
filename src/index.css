@@ -1,4 +1,5 @@
 /* src/index.css - Combined Styles */
+@import './accessibility.css';
 
 /* Temel Sıfırlama ve Box Sizing */
 *, *::before, *::after {
@@ -49,6 +50,22 @@ p {
   margin-bottom: 1em;
 }
 
+/* Tema Renkleri ve Değişkenler */
+:root {
+  --color-primary: #1976d2;
+  --color-success: #43a047;
+  --color-error: #e53935;
+  --color-info: #1565c0;
+  --color-bg: #f4f7f9;
+  --color-card: #fff;
+  --color-border: #e0e0e0;
+  --color-toast-bg: #222;
+  --color-toast-success: #43a047;
+  --color-toast-error: #e53935;
+  --color-toast-info: #1976d2;
+  --modal-backdrop: rgba(0,0,0,0.3);
+}
+
 /* Genel Buton Stilleri */
 button, input[type="submit"] {
   padding: 0.75em 1.5em;
@@ -58,8 +75,82 @@ button, input[type="submit"] {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease;
-  background-color: #007bff;
-  color: white;
+  background: var(--color-primary);
+  color: #fff;
+}
+button:active {
+  transform: scale(0.98);
+}
+
+/* Toast Bildirimleri */
+.toast-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.toast {
+  min-width: 220px;
+  padding: 1em 1.5em;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--color-toast-bg);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.11);
+  font-size: 1rem;
+  animation: fade-in 0.3s;
+}
+.toast-success { background: var(--color-toast-success); }
+.toast-error { background: var(--color-toast-error); }
+.toast-info { background: var(--color-toast-info); }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--modal-backdrop);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: var(--color-card);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  min-width: 320px;
+  max-width: 90vw;
+  position: relative;
+}
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.modal-content {
+  margin-bottom: 1.5rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  color: #888;
+  font-size: 1.5rem;
+  border: none;
+  cursor: pointer;
 }
 
 button:hover, input[type="submit"]:hover {

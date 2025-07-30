@@ -13,20 +13,6 @@ const formatDateToYYYYMMDD = (date: Date): string => {
     return `${year}-${month}-${day}`;
 };
 
-// Helper function to get the start of the current month in YYYY-MM-DD format
-const getStartOfCurrentMonth = (): string => {
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    return formatDateToYYYYMMDD(startOfMonth);
-};
-
-// Helper function to get the end of the current month in YYYY-MM-DD format
-const getEndOfCurrentMonth = (): string => {
-    const today = new Date();
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    return formatDateToYYYYMMDD(endOfMonth);
-};
-
 // Helper function to format Timestamp to a readable date string
 const formatTimestampToDateString = (timestamp: Timestamp): string => {
     if (!timestamp || !timestamp.toDate) return 'Geçersiz Tarih';

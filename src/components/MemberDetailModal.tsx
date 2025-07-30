@@ -95,7 +95,7 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
 
                     if (packageDocSnap.exists()) {
                         const packageData = packageDocSnap.data() as Package;
-                        assignedPackage.totalLessonCount = packageData.lessonCount;
+                        assignedPackage.totalLessonCount = packageData.lessonCount ?? undefined;
                         assignedPackage.packagePrice = packageData.price;
                     } else {
                         console.warn(`Package with ID ${assignedPackage.packageId} not found.`);

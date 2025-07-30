@@ -12,7 +12,13 @@ export interface Branch {
     description: string; // Added description
 }
 
-const BranchList: React.FC = () => {
+interface BranchListProps {
+  refreshTrigger: boolean;
+  onBranchDeleted?: () => void;
+  onBranchEdited?: (branch: Branch) => void;
+}
+
+const BranchList: React.FC<BranchListProps> = ({ refreshTrigger }) => {
     const [branches, setBranches] = useState<Branch[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -39,7 +45,7 @@ const BranchList: React.FC = () => {
         };
 
         fetchBranches();
-    }, []);
+    }, [refreshTrigger]);
 
     const handleDeleteBranch = async (branchId: string) => {
         try {

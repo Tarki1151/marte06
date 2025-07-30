@@ -1,11 +1,14 @@
 // src/pages/PackageManagement.tsx
 import React, { useState } from 'react';
 import AddPackageForm from '../components/AddPackageForm.tsx';
+import Modal from '../components/Modal';
+import { useToast } from '../components/ToastContext';
 import PackageList from '../components/PackageList.tsx';
 import './PackageManagement.css';
 import type { Package } from '../components/PackageList.tsx'; // Import Package interface
 
 const PackageManagement: React.FC = () => {
+  const { showToast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [refreshList, setRefreshList] = useState(false); // Liste yenileme için state
   const [editingPackage, setEditingPackage] = useState<Package | null>(null); // State for editing package
@@ -15,6 +18,7 @@ const PackageManagement: React.FC = () => {
     setShowAddForm(false);
     setRefreshList(prev => !prev); // Refresh list
     setEditingPackage(null); // Clear editing state
+    showToast('Paket başarıyla eklendi!', 'success');
   };
 
   // Handle package updated (will be called from AddPackageForm in the next step)
@@ -22,7 +26,7 @@ const PackageManagement: React.FC = () => {
     setEditingPackage(null); // Clear editing state
     setShowAddForm(false); // Hide form
     setRefreshList(prev => !prev); // Refresh list
-    // TODO: Show success message
+    showToast('Paket başarıyla güncellendi!', 'success');
   };
 
   // Handle package deleted (from PackageList)
@@ -49,15 +53,17 @@ const PackageManagement: React.FC = () => {
       </button>
 
       {/* New/Edit Package Form (shown if showAddForm is true) */}
-      {showAddForm && (
-        <div className="add-package-form-container card"> {/* .card class will apply */} 
-          <AddPackageForm 
-            onPackageAdded={handlePackageAdded} 
-            onPackageUpdated={handlePackageUpdated} /* Pass update handler */
-            editingPackage={editingPackage} /* Pass package to edit */
-          />
-        </div>
-      )}
+      <Modal
+        isOpen={showAddForm}
+        onClose={() => { setShowAddForm(false); setEditingPackage(null); }}
+        title={editingPackage ? 'Paketi Düzenle' : 'Yeni Paket Ekle'}
+      >
+        <AddPackageForm 
+          onPackageAdded={handlePackageAdded} 
+          onPackageUpdated={handlePackageUpdated}
+          editingPackage={editingPackage}
+        />
+      </Modal>
 
       {/* Package List */}
       <div className="package-list-container card"> {/* .card class will apply */} 

@@ -151,7 +151,7 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
           type="number"
           id="packageLessonCount"
           value={lessonCount}
-          onChange={(e) => setLessonCount(e.target.value === '' ? '' : Number(e.target.value) || undefined)}
+          onChange={(e) => setLessonCount(e.target.value === '' ? '' : Number(e.target.value))}
           min="0"
         />
       </div>
@@ -161,7 +161,7 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
           type="number"
           id="packageDurationDays"
           value={durationDays}
-          onChange={(e) => setDurationDays(e.target.value === '' ? '' : Number(e.target.value) || undefined)}
+          onChange={(e) => setDurationDays(e.target.value === '' ? '' : Number(e.target.value))}
           min="0"
         />
       </div>
