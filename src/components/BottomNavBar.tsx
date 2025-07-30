@@ -2,6 +2,8 @@
 import React, { useState } from 'react'; // useState hook'unu import et
 import { Link, useNavigate } from 'react-router-dom';
 import './BottomNavBar.css';
+import { AiOutlineUsergroupAdd } from 'react-icons/ai';
+import { MdInventory, MdCalendarMonth, MdBarChart, MdLogout } from 'react-icons/md';
 import { auth } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import ConfirmModal from './ConfirmModal'; // ConfirmModal bileşenini import et
@@ -33,30 +35,40 @@ const BottomNavBar: React.FC = () => {
     setShowLogoutModal(false); // Modali kapat
   };
 
+  // Aktif sekmeyi belirle (path'e göre)
+  const currentPath = window.location.pathname;
+  const navItems = [
+    { to: '/members', icon: <AiOutlineUsergroupAdd size={24} />, label: 'Üyeler', tooltip: 'Üye Yönetimi', aria: 'Üyeler Sayfası' },
+    { to: '/packages', icon: <MdInventory size={24} />, label: 'Paketler', tooltip: 'Paket Yönetimi', aria: 'Paketler Sayfası' },
+    { to: '/calendar', icon: <MdCalendarMonth size={24} />, label: 'Takvim', tooltip: 'Takvim', aria: 'Takvim Sayfası' },
+    { to: '/reports', icon: <MdBarChart size={24} />, label: 'Raporlar', tooltip: 'Raporlar', aria: 'Raporlar Sayfası' },
+  ];
+
   return (
     <>
-      <nav className="bottom-nav-bar">
-        <Link to="/members" className="nav-link">
-          <i className="nav-icon">👥</i>
-          <span>Üyeler</span>
-        </Link>
-        <Link to="/packages" className="nav-link">
-          <i className="nav-icon">📦</i>
-          <span>Paketler</span>
-        </Link>
-        <Link to="/calendar" className="nav-link">
-          <i className="nav-icon">📅</i>
-          <span>Takvim</span>
-        </Link>
-        <Link to="/reports" className="nav-link">
-          <i className="nav-icon">📊</i>
-          <span>Raporlar</span>
-        </Link>
-
+      <nav className="bottom-nav-bar" role="navigation" aria-label="Alt Navigasyon Barı">
+        {navItems.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={`nav-link${currentPath.startsWith(item.to) ? ' active' : ''}`}
+            tabIndex={0}
+            aria-current={currentPath.startsWith(item.to) ? 'page' : undefined}
+            aria-label={item.aria}
+            title={item.tooltip}
+          >
+            {React.cloneElement(item.icon, { size: 24, color: '#222', style: { display: 'block', flexShrink: 0 } })}
+          </Link>
+        ))}
         {/* Çıkış Yap butonu - Modali açar */}
-        <button onClick={handleLogoutClick} className="nav-link logout-link-button">
-          <i className="nav-icon">🚪</i>
-          <span>Çıkış</span>
+        <button
+          onClick={handleLogoutClick}
+          className="nav-link logout-link-button"
+          tabIndex={0}
+          aria-label="Çıkış Yap"
+          title="Çıkış Yap"
+        >
+          <MdLogout size={24} color="#222" style={{ display: 'block', flexShrink: 0 }} />
         </button>
       </nav>
 

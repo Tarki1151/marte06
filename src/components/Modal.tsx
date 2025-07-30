@@ -15,7 +15,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, actions
       <div className="modal" onClick={e => e.stopPropagation()}>
         {title && <div className="modal-title">{title}</div>}
         <div className="modal-content">{children}</div>
-        {(actions || onClose) && (
+        {actions && (
           <div className="modal-actions">
             {actions}
             <button className="modal-close" onClick={onClose}>Kapat</button>

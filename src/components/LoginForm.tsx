@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 
 import { useNavigate } from 'react-router-dom';
 // import './LoginForm.css'; // CSS dosyasını import et - Kaldırıldı
 import googleLogo from '../images/google-logo.png'; // Google logosunu import et
+import { MdMailOutline } from 'react-icons/md';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -65,7 +66,7 @@ const LoginForm: React.FC = () => {
             required
           />
         </div>
-        <div>
+        <div style={{ marginBottom: 16 }}>
           <label htmlFor="password">Şifre:</label>
           <input
             type="password"
@@ -76,36 +77,27 @@ const LoginForm: React.FC = () => {
           />
         </div>
         {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="google-btn"
+          style={{ marginBottom: 12 }}
+        >
+          <span className="google-btn-icon" style={{ color: '#4285f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MdMailOutline size={22} />
+          </span>
           {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
         </button>
       </form>
-        <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            style={{ // Apply styles to try to match the image
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                backgroundColor: '#f0f0f0',
-                color: '#212121',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-            }}
-        >
-            {loading ? 'Google ile Giriş Yapılıyor...' : (
-                <>
-                    <img src={googleLogo} alt="Google Logo" style={{ height: '20px', width: '20px' }} />
-                    Google ile Giriş Yap
-                </>
-            )}
-        </button>
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={loading}
+        className="google-btn"
+      >
+        <img src={googleLogo} alt="Google Logo" className="google-btn-icon" />
+        {loading ? 'Google ile Giriş Yapılıyor...' : 'Google ile Giriş Yap'}
+      </button>
     </div>
   );
 };

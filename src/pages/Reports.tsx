@@ -3,8 +3,53 @@ import './Reports.css'; // Sayfaya özgü stiller için
 import { db } from '../firebaseConfig';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import type { Member } from '../components/MemberList';
+import ReportTableChart from '../components/ReportTableChart';
 
 const Reports: React.FC = () => {
+    // ... mevcut state'ler ...
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [monthlyLessonCounts, setMonthlyLessonCounts] = useState<{ label: string; value: number }[]>([]);
+    const [loadingLessons, setLoadingLessons] = useState(false);
+    const [errorLessons, setErrorLessons] = useState<string | null>(null);
+
+    // Seçili yıl değiştiğinde Firestore'dan dersleri çekip aylara göre grupla
+    useEffect(() => {
+        async function fetchYearlyLessons() {
+            setLoadingLessons(true);
+            setErrorLessons(null);
+            try {
+                const lessonsRef = collection(db, 'lessons');
+                // Yılın başı ve sonu (UTC)
+                const startOfYear = new Date(Date.UTC(selectedYear, 0, 1));
+                const endOfYear = new Date(Date.UTC(selectedYear, 11, 31, 23, 59, 59));
+                const q = query(
+                    lessonsRef,
+                    where('date', '>=', Timestamp.fromDate(startOfYear)),
+                    where('date', '<=', Timestamp.fromDate(endOfYear))
+                );
+                const snapshot = await getDocs(q);
+                // Aylara göre grupla
+                const counts = Array(12).fill(0);
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.date && data.memberIds && Array.isArray(data.memberIds)) {
+                        const dateObj = (data.date as any)?.toDate?.() || new Date(data.date.seconds * 1000);
+                        const monthIdx = dateObj.getMonth(); // 0-11
+                        counts[monthIdx] += data.memberIds.length; // O ayda toplam katılım (tüm üyeler)
+                    }
+                });
+                const monthLabels = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+                setMonthlyLessonCounts(counts.map((value, i) => ({ label: monthLabels[i], value })));
+            } catch (e: any) {
+                setErrorLessons('Katılım verileri yüklenirken hata oluştu: ' + (e.message || e.toString()));
+                setMonthlyLessonCounts([]);
+            } finally {
+                setLoadingLessons(false);
+            }
+        }
+        fetchYearlyLessons();
+    }, [selectedYear]);
+
     const [selectedMember, setSelectedMember] = useState<Member | null>(null);
     const [attendanceData, setAttendanceData] = useState<{
         date: Date;
@@ -16,7 +61,6 @@ const Reports: React.FC = () => {
 
     // New state variables for month and year selection
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // 1-indexed
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
      // New state variables for date range selection
     const [startDate, setStartDate] = useState<string | null>(null);
     const [endDate, setEndDate] = useState<string | null>(null);
@@ -289,6 +333,23 @@ const Reports: React.FC = () => {
             )}
 
             {/* MonthlyAttendanceReport bileşeni kaldırıldı */}        
+
+            {/* Genel Rapor Tablo/Grafik (Gerçek Veri) */}
+            <div style={{ marginTop: 32 }}>
+              <h3>Yıllık Katılım Raporu</h3>
+              <p style={{ color: '#666', fontSize: 14 }}>Aşağıda seçili yıl için tüm üyelerin toplam katılımı aylara göre özetlenmiştir.</p>
+              <ReportTableChart
+                data={monthlyLessonCounts}
+                columns={[
+                  { key: 'label', label: 'Ay' },
+                  { key: 'value', label: 'Toplam Katılım' }
+                ]}
+                chartTitle={`${selectedYear} Yılı Aylara Göre Toplam Katılım Grafiği`}
+                tableTitle={`${selectedYear} Yılı Aylık Katılım Tablosu`}
+              />
+              {loadingLessons && <p>Katılım verileri yükleniyor...</p>}
+              {errorLessons && <p style={{ color: 'red' }}>{errorLessons}</p>}
+            </div>
         </div>
     );
 };
