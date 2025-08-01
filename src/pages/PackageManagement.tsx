@@ -6,7 +6,8 @@ import { useToast } from '../components/ToastContext';
 import PackageList from '../components/PackageList';
 import type { Package } from '../types/Package';
 import { db } from '../firebaseConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import ConfirmModal from '../components/ConfirmModal';
 import './PackageManagement.css';
 
 const PackageManagement: React.FC = () => {
@@ -15,6 +16,8 @@ const PackageManagement: React.FC = () => {
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+  const [packageToDelete, setPackageToDelete] = useState<string | null>(null);
 
   const fetchPackages = async () => {
     setLoading(true);
@@ -50,6 +53,26 @@ const PackageManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleDeleteRequest = (packageId: string) => {
+    setPackageToDelete(packageId);
+    setIsConfirmModalVisible(true);
+  };
+
+  const confirmDeletion = async () => {
+    if (packageToDelete) {
+      try {
+        await deleteDoc(doc(db, 'packages', packageToDelete));
+        showToast('Paket başarıyla silindi.', 'success');
+        fetchPackages(); // Refresh the list
+      } catch (error) {
+        console.error("Error deleting package: ", error);
+        showToast('Paket silinirken bir hata oluştu.', 'error');
+      }
+      setPackageToDelete(null);
+      setIsConfirmModalVisible(false);
+    }
+  };
+
   return (
     <div className="package-management-page"> {/* Ana konteyner */}
       <div className="page-header"> {/* Başlık için container */}
@@ -80,9 +103,20 @@ const PackageManagement: React.FC = () => {
           <PackageList 
             packages={packages}
             onPackageEdited={handleEditPackage}
+            onPackageDeleted={handleDeleteRequest}
           />
         )}
       </div>
+
+      <ConfirmModal
+        isVisible={isConfirmModalVisible}
+        message="Bu paketi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+        onConfirm={confirmDeletion}
+        onCancel={() => {
+          setIsConfirmModalVisible(false);
+          setPackageToDelete(null);
+        }}
+      />
     </div>
   );
 };

@@ -6,9 +6,10 @@ import './PackageList.css';
 interface PackageListProps {
   packages: Package[];
   onPackageEdited: (pkg: Package) => void;
+  onPackageDeleted: (packageId: string) => void;
 }
 
-const PackageList: React.FC<PackageListProps> = ({ packages, onPackageEdited }) => {
+const PackageList: React.FC<PackageListProps> = ({ packages, onPackageEdited, onPackageDeleted }) => {
   if (packages.length === 0) {
     return <div style={{ textAlign: 'center', padding: '1.5rem', color: '#888' }}>Henüz tanımlı paket bulunmamaktadır.</div>;
   }
@@ -21,11 +22,6 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageEdited }) 
           <li
             key={pkg.id}
             className={`package-list-item card ${pkg.isActive ? 'active-package' : 'inactive-package'}`}
-            onClick={() => onPackageEdited(pkg)}
-            title={`${pkg.name} paketini düzenle`}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onPackageEdited(pkg)}
           >
             <div className="package-info">
               <h4>{pkg.name}</h4>
@@ -34,6 +30,10 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageEdited }) 
                 {pkg.lessonCount != null && <span><strong>Ders:</strong> {pkg.lessonCount}</span>}
                 {pkg.durationDays != null && <span><strong>Süre:</strong> {pkg.durationDays} Gün</span>}
               </div>
+            </div>
+            <div className="package-actions">
+                <button onClick={() => onPackageEdited(pkg)} className="button-edit">Düzenle</button>
+                <button onClick={() => onPackageDeleted(pkg.id)} className="button-delete">Sil</button>
             </div>
           </li>
         ))}

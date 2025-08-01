@@ -52,7 +52,7 @@ p {
 
 /* Tema Renkleri ve Değişkenler */
 :root {
-  --color-primary: #1976d2;
+  --color-primary: #7aa8d5;
   --color-success: #43a047;
   --color-error: #e53935;
   --color-info: #1565c0;
@@ -62,7 +62,7 @@ p {
   --color-toast-bg: #222;
   --color-toast-success: #43a047;
   --color-toast-error: #e53935;
-  --color-toast-info: #1976d2;
+  --color-toast-info: #7aa8d5;
   --modal-backdrop: rgba(0,0,0,0.3);
 }
 

@@ -5,6 +5,8 @@ import MemberList from '../components/MemberList.tsx';
 import './MemberManagement.css'; // Sayfaya özgü diğer stiller için
 import type { Member } from '../components/MemberList.tsx'; // Member tipi için import
 import MemberDetailModal from '../components/MemberDetailModal.tsx'; // MemberDetailModal importu eklendi
+import { db } from '../firebaseConfig.ts'; // Firebase db instance
+import { doc, deleteDoc } from 'firebase/firestore';
 
 
 const MemberManagement: React.FC = () => {
@@ -38,10 +40,19 @@ const MemberManagement: React.FC = () => {
   };
 
   // Üye detay modalından silme talebi gelince tetiklenir
-  const handleDeleteMember = (member: Member) => {
-    // TODO: Silme onayı için bir modal gösterilecek
-    console.log('Deleting member:', member.id);
-    alert(`${member.name} ${member.surname} adlı üyeyi silme işlemi (onay mekanizması eklenecek).`);
+  const handleDeleteMember = async (memberId: string) => {
+    try {
+      const memberDocRef = doc(db, 'members', memberId);
+      await deleteDoc(memberDocRef);
+      console.log('Member deleted successfully with ID:', memberId);
+      
+      // After successful deletion from the backend:
+      handleCloseMemberDetailModal(); // Close the modal
+      setRefreshList(prev => !prev); // Refresh the member list
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      alert('Üye silinirken bir hata oluştu.');
+    }
   };
 
   // Üye detay modalı kapatılınca tetiklenir
@@ -103,7 +114,7 @@ const MemberManagement: React.FC = () => {
               isVisible={showMemberDetailModal} /* Modalın görünürlüğünü kontrol et */
               onClose={handleCloseMemberDetailModal} /* Kapatma callback'i */
               member={memberForDetail} /* Detayı gösterilecek üyeyi pass et */
-              onEdit={handleEditMember}
+              onMemberUpdate={handleEditMember}
               onDelete={handleDeleteMember}
           />
       )}

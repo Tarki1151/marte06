@@ -24,7 +24,7 @@ const ReportTableChart: React.FC<ReportTableChartProps> = ({ data, columns, char
           <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 36 }}>
             <div
               style={{
-                background: '#1976d2',
+                background: '#7aa8d5',
                 width: 28,
                 height: `${(row[columns[1].key] / maxVal) * 120}px`,
                 borderRadius: 6,
