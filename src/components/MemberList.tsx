@@ -1,9 +1,7 @@
 // src/components/MemberList.tsx
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, doc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { useToast } from './ToastContext';
-import Modal from './Modal';
+import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import './MemberList.css';
 import { formatPhone } from '../utils/formatPhone';
 
@@ -22,20 +20,15 @@ export interface Member {
 
 interface MemberListProps {
   refreshTrigger: boolean;
-  onMemberDeleted: () => void;
-  onMemberEdited: (member: Member) => void;
-  onMemberClick: (member: Member) => void; // Yeni callback prop'u
+  onMemberClick: (member: Member) => void;
 }
 
-const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted, onMemberEdited, onMemberClick }) => {
+const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberClick }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
-  const { showToast } = useToast();
 
   useEffect(() => {
     setSearch('');
@@ -86,35 +79,7 @@ const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted
     return <div>Henüz kayıtlı üye bulunmamaktadır.</div>;
   }
 
-  const openDeleteModal = (member: Member) => {
-    setConfirmDeleteId(member.id);
-    setConfirmDeleteName(`${member.name} ${member.surname}`);
-  };
 
-  const closeDeleteModal = () => {
-    setConfirmDeleteId(null);
-    setConfirmDeleteName(null);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!confirmDeleteId) return;
-    setDeletingId(confirmDeleteId);
-    try {
-      await deleteDoc(doc(db, 'members', confirmDeleteId));
-      showToast('Üye başarıyla silindi.', 'success');
-      onMemberDeleted();
-    } catch (error: any) {
-      showToast('Üye silinirken hata oluştu: ' + error.message, 'error');
-      setError('Üye silinirken bir hata oluştu: ' + error.message);
-    } finally {
-      setDeletingId(null);
-      closeDeleteModal();
-    }
-  };
-
-  const handleEditClick = (member: Member) => {
-    onMemberEdited(member);
-  };
 
    // Handle click on the member list item (to open detail modal)
   const handleMemberItemClick = (member: Member) => {
@@ -130,12 +95,12 @@ const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted
           placeholder="Üye ara (isim, soyisim, e-posta, telefon)"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ marginBottom: '1rem', padding: '0.5rem 1rem', borderRadius: 6, border: '1px solid #ddd', width: '100%', maxWidth: 320 }}
+          style={{ marginBottom: '0.5rem', padding: '0.5rem 0.5rem', borderRadius: 6, border: '1px solid #ddd', width: '100%', maxWidth: 320 }}
           aria-label="Üye ara"
         />
         <ul>
           {filteredMembers.length === 0 ? (
-            <li style={{ color: '#888', padding: '1rem' }}>Aramanıza uygun üye bulunamadı.</li>
+            <li style={{ color: '#888', padding: '0.5rem' }}>Aramanıza uygun üye bulunamadı.</li>
           ) : (
             <>
               {filteredMembers.map(member => (
@@ -151,36 +116,14 @@ const MemberList: React.FC<MemberListProps> = ({ refreshTrigger, onMemberDeleted
                     {member.name} {member.surname} - {formatPhone(member.phone) || 'Telefon Yok'}
                     {member.notes && ` - Not: ${member.notes}`}
                   </span>
-                  <div className="actions" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleEditClick(member)} title="Düzenle" aria-label={`Üyeyi Düzenle: ${member.name} ${member.surname}`}>✏️</button>
-                    <button onClick={() => openDeleteModal(member)} disabled={deletingId === member.id} title="Sil" aria-label={`Üyeyi Sil: ${member.name} ${member.surname}`}>
-                      {deletingId === member.id ? '...' : '🗑️'}
-                    </button>
-                  </div>
+
                 </li>
               ))}
             </>
           )}
         </ul>
       </div>
-      {/* Silme Onay Modali */}
-      <Modal
-        isOpen={!!confirmDeleteId}
-        onClose={closeDeleteModal}
-        title="Üyeyi Sil"
-        actions={
-          <>
-            <button onClick={handleConfirmDelete} style={{ background: 'var(--color-error)' }} disabled={deletingId === confirmDeleteId}>
-              {deletingId === confirmDeleteId ? 'Siliniyor...' : 'Evet, Sil'}
-            </button>
-            <button onClick={closeDeleteModal} style={{ background: 'var(--color-border)', color: '#333' }}>Vazgeç</button>
-          </>
-        }
-      >
-        <div>
-          <strong>{confirmDeleteName}</strong> adlı üyeyi silmek istediğinize emin misiniz?
-        </div>
-      </Modal>
+
     </>
   );
 }

@@ -16,8 +16,8 @@
 
 /* Ebeveyn Bilgileri Başlığı */
 h4 {
-    margin-top: 1.5rem; /* Üst boşluk */
-    margin-bottom: 1rem; /* Alt boşluk */
+    margin-top: 1rem; /* Üst boşluk */
+    margin-bottom: 0.5rem; /* Alt boşluk */
     /* font-weight index.css'ten gelecek */
     color: #333; /* Renk */
 }
@@ -27,12 +27,12 @@ h4 {
     display: flex; /* Checkbox ve label'ı yan yana al */
     align-items: center;
     gap: 10px; /* Aralarına boşluk */
-    margin-bottom: 1rem; /* Form grubu boşluğu */
+    margin-bottom: 0.5rem; /* Form grubu boşluğu */
 }
 
 /* Hata mesajı stili */
 p[style*="color: red"] {
-  margin-top: 1rem; /* Üst boşluk */
+  margin-top: 0.5rem; /* Üst boşluk */
   font-weight: bold; /* Kalın font */
   /* Renk zaten inline style ile veriliyor */
 }

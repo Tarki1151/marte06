@@ -1,0 +1,39 @@
+/* src/pages/MemberManagement.css */
+
+.member-management-page {
+  padding: 20px;
+  padding-bottom: 80px; /* Alt navigasyon çubuğu için boşluk */
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Elementler arası boşluk */
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-color);
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Form ve liste konteynerleri için genel stil */
+.add-member-form-container,
+.member-list-container {
+  width: 100%;
+  max-width: 800px; /* Maksimum genişlik */
+  margin: 0 auto; /* Ortalamak için */
+}
+
+/* .card stili global.css'den geleceği varsayıldı, burada ek boşluk ekleyebiliriz */
+.card {
+    padding: 20px;
+}

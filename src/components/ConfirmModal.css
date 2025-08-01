@@ -15,12 +15,12 @@
 
 .modal-content {
   background-color: #fff; /* Beyaz arkaplan */
-  padding: 20px;
+  padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
-  max-width: 300px; /* Maksimum genişlik */
-  width: 90%; /* Küçük ekranlarda daha dar olsun */
+  max-width: 400px; /* Maksimum genişlik */
+  width: 99%; /* Küçük ekranlarda daha dar olsun */
 }
 
 .modal-content p {

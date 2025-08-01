@@ -1,46 +1,49 @@
 // src/components/AddPackageForm.tsx
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'; // doc, updateDoc importları eklendi
-import type { Package } from '../components/PackageList.tsx'; // Import Package interface
-import './AddPackageForm.css'; // CSS dosyası
+import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import type { Package } from '../types/Package';
+import { formatPrice } from '../utils/formatters';
+import './AddPackageForm.css';
 
 interface AddPackageFormProps {
-  onPackageAdded: () => void;
-  onPackageUpdated: () => void; // Callback after update
-  editingPackage: Package | null; // Package to edit
+  onSuccess: () => void;
+  existingPackage?: Package | null;
 }
 
-const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPackageUpdated, editingPackage }) => {
+const AddPackageForm: React.FC<AddPackageFormProps> = ({ onSuccess, existingPackage }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState<number | '' >('');
-  const [lessonCount, setLessonCount] = useState<number | '' >('');
-  const [durationDays, setDurationDays] = useState<number | '' >('');
+  const [price, setPrice] = useState<number | ''>('');
+  const [displayPrice, setDisplayPrice] = useState('');
+  const [lessonCount, setLessonCount] = useState<number | ''>(''); // Ders sayısı
+  const [durationDays, setDurationDays] = useState<number | ''>(''); // Süre (gün)
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false); // loading state
   const [error, setError] = useState<string | null>(null); // error state
 
-  // Populate form when editingPackage changes
+  // Populate form when existingPackage changes
   useEffect(() => {
-    if (editingPackage) {
-      setName(editingPackage.name);
-      setDescription(editingPackage.description || '');
-      setPrice(editingPackage.price);
-      setLessonCount(editingPackage.lessonCount === null || editingPackage.lessonCount === undefined ? '' : editingPackage.lessonCount); // Handle null or undefined
-      setDurationDays(editingPackage.durationDays === null || editingPackage.durationDays === undefined ? '' : editingPackage.durationDays); // Handle null or undefined
-      setIsActive(editingPackage.isActive);
+    if (existingPackage) {
+      setName(existingPackage.name);
+      setDescription(existingPackage.description || '');
+      setPrice(existingPackage.price);
+      setDisplayPrice(formatPrice(existingPackage.price));
+      setLessonCount(existingPackage.lessonCount === null || existingPackage.lessonCount === undefined ? '' : existingPackage.lessonCount); // Handle null or undefined
+      setDurationDays(existingPackage.durationDays === null || existingPackage.durationDays === undefined ? '' : existingPackage.durationDays); // Handle null or undefined
+      setIsActive(existingPackage.isActive !== undefined ? existingPackage.isActive : true);
     } else {
       // Clear form for new package
       setName('');
       setDescription('');
       setPrice('');
+      setDisplayPrice('');
       setLessonCount('');
       setDurationDays('');
       setIsActive(true);
     }
     setError(null);
-  }, [editingPackage]);
+  }, [existingPackage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,12 +82,12 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
     };
 
     try {
-      if (editingPackage) {
+      if (existingPackage) {
         // Update package
-        const packageDocRef = doc(db, 'packages', editingPackage.id);
+        const packageDocRef = doc(db, 'packages', existingPackage.id);
         await updateDoc(packageDocRef, packageData);
-        console.log('Paket güncellendi:', editingPackage.id);
-        onPackageUpdated(); // Call update callback
+        console.log('Paket güncellendi:', existingPackage.id);
+        onSuccess(); // Call update callback
       } else {
         // Add new package
         await addDoc(collection(db, 'packages'), {
@@ -92,22 +95,23 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
           createdAt: serverTimestamp(),
         });
         console.log('Yeni paket eklendi');
-        onPackageAdded(); // Call added callback
+        onSuccess(); // Call added callback
       }
 
       // Clear form if not in editing mode (or if editing is complete and form is hidden)
-       if (!editingPackage) {
+       if (!existingPackage) {
             setName('');
             setDescription('');
             setPrice('');
+            setDisplayPrice('');
             setLessonCount('');
             setDurationDays('');
             setIsActive(true);
        } // else: form will be cleared/hidden by parent (PackageManagement)
 
     } catch (error: any) {
-      console.error(editingPackage ? 'Paket güncelleme hatası:' : 'Paket ekleme hatası:', error);
-      setError((editingPackage ? 'Paket güncellenirken bir hata oluştu: ' : 'Paket eklenirken bir hata oluştu: ') + error.message);
+      console.error(existingPackage ? 'Paket güncelleme hatası:' : 'Paket ekleme hatası:', error);
+      setError((existingPackage ? 'Paket güncellenirken bir hata oluştu: ' : 'Paket eklenirken bir hata oluştu: ') + error.message);
     } finally {
       setLoading(false);
     }
@@ -137,10 +141,17 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
       <div>
         <label htmlFor="packagePrice">Fiyat (TL):</label>
         <input
-          type="number"
-          id="packagePrice"
-          value={price}
-          onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
+          id="price"
+          type="text" // Change to text to allow for formatting
+          value={displayPrice}
+          onChange={(e) => {
+            const rawValue = e.target.value.replace(/\./g, ''); // Remove dots
+            const numValue = rawValue === '' ? '' : parseInt(rawValue, 10);
+            if (!isNaN(Number(numValue))) {
+              setPrice(numValue);
+              setDisplayPrice(numValue === '' ? '' : formatPrice(Number(numValue)));
+            }
+          }}
           required
           min="0"
         />
@@ -178,7 +189,7 @@ const AddPackageForm: React.FC<AddPackageFormProps> = ({ onPackageAdded, onPacka
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <button type="submit" disabled={loading}>
-        {loading ? (editingPackage ? 'Güncelleniyor...' : 'Ekleniyor...') : (editingPackage ? 'Güncelle' : 'Kaydet')}
+        {loading ? (existingPackage ? 'Güncelleniyor...' : 'Ekleniyor...') : (existingPackage ? 'Güncelle' : 'Kaydet')}
       </button>
     </form>
   );

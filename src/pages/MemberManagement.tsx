@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import AddMemberForm from '../components/AddMemberForm.tsx';
 import MemberList from '../components/MemberList.tsx';
-// import './MemberManagement.css'; // Sayfaya özgü diğer stiller için
+import './MemberManagement.css'; // Sayfaya özgü diğer stiller için
 import type { Member } from '../components/MemberList.tsx'; // Member tipi için import
 import MemberDetailModal from '../components/MemberDetailModal.tsx'; // MemberDetailModal importu eklendi
 
@@ -22,25 +22,26 @@ const MemberManagement: React.FC = () => {
     setEditingMember(null); // Düzenleme durumunu sıfırla
   };
 
-  // Üye silme başarılı olunca tetiklenir
-  const handleMemberDeleted = () => {
-    setRefreshList(prev => !prev); // Listeyi yenile
-    // Silme sonrası detay modalı açıksa kapatılabilir veya üye listeden çıkarsa kapanır
-    // setMemberForDetail(null);
-    // setShowMemberDetailModal(false);
-  };
 
-  // Üye düzenle butonuna basılınca tetiklenir
-  const handleMemberEdited = (member: Member) => {
-    setEditingMember(member); // Düzenlenen üyeyi state'e kaydet
-    setShowAddForm(true); // Düzenleme formu için ekleme formunu göster
-    // TODO: Formu düzenlenecek üye bilgileriyle doldurma mantığı AddMemberForm componentinde olacak
-  };
 
   // Üye listesinde bir üyeye tıklanınca tetiklenir
   const handleMemberClick = (member: Member) => {
       setMemberForDetail(member); // Detayı gösterilecek üyeyi state'e kaydet
       setShowMemberDetailModal(true); // Detay modalını göster
+  };
+
+  // Üye detay modalından düzenleme talebi gelince tetiklenir
+  const handleEditMember = (member: Member) => {
+    setShowMemberDetailModal(false); // Detay modalını kapat
+    setEditingMember(member); // Düzenlenecek üyeyi ayarla
+    setShowAddForm(true); // Ekleme/düzenleme formunu göster
+  };
+
+  // Üye detay modalından silme talebi gelince tetiklenir
+  const handleDeleteMember = (member: Member) => {
+    // TODO: Silme onayı için bir modal gösterilecek
+    console.log('Deleting member:', member.id);
+    alert(`${member.name} ${member.surname} adlı üyeyi silme işlemi (onay mekanizması eklenecek).`);
   };
 
   // Üye detay modalı kapatılınca tetiklenir
@@ -92,8 +93,6 @@ const MemberManagement: React.FC = () => {
       <div className="member-list-container card"> {/* .card class'ı eklendi */} 
         <MemberList 
           refreshTrigger={refreshList} 
-          onMemberDeleted={handleMemberDeleted} /* onMemberDeleted callback'i pass edildi */
-          onMemberEdited={handleMemberEdited}   /* onMemberEdited callback'i pass edildi */
           onMemberClick={handleMemberClick} /* onMemberClick callback'i pass edildi */
         />
       </div>
@@ -104,7 +103,8 @@ const MemberManagement: React.FC = () => {
               isVisible={showMemberDetailModal} /* Modalın görünürlüğünü kontrol et */
               onClose={handleCloseMemberDetailModal} /* Kapatma callback'i */
               member={memberForDetail} /* Detayı gösterilecek üyeyi pass et */
-              // TODO: onPackageAssigned, onPaymentRecorded, onDeleteAssignedPackage, onDeletePayment callbackleri eklenecek
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
           />
       )}
 

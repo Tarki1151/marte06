@@ -3,7 +3,13 @@
 .member-list {
   width: 100%;
   max-width: 600px;
-  margin: 0 auto 2rem auto;
+  margin: 0 auto 1.5rem auto;
+}
+
+.member-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .add-member-btn {
@@ -11,14 +17,14 @@
   display: block;
   margin-bottom: 1.25rem;
   font-size: 1.08rem;
-  padding: 1rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   border-radius: 8px;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .modal-content {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   max-height: 65vh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -63,9 +69,13 @@
     border-radius: 4px;
   }
   .card li .actions button {
-    font-size: 1.1rem;
+    font-size: 1.0.5rem;
     padding: 5px 8px;
   }
+}
+
+.card li.member-list-item {
+  margin-bottom: 0 !important; /* Remove space between items */
 }
 
 .card li.member-list-item:active {

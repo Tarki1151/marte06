@@ -1,7 +1,7 @@
 // src/components/MemberDetailModal.tsx
 import React, { useState, useEffect } from 'react';
 import type { Member } from './MemberList.tsx'; // Import Member interface
-import type { Package } from './PackageList.tsx'; // Import Package interface
+import type { Package } from '../types/Package'; // Import Package interface
 import { db } from '../firebaseConfig'; // Firestore db import
 import { collection, query, where, getDocs, doc, deleteDoc, addDoc, Timestamp, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore'; // Firestore functions
 import './MemberDetailModal.css'; // CSS dosyası
@@ -35,10 +35,11 @@ interface MemberDetailModalProps {
     isVisible: boolean;
     onClose: () => void;
     member: Member; // The member whose details are being shown
-    // TODO: Add callbacks for package assignment and payment recording
+    onEdit: (member: Member) => void; // Callback to trigger editing
+    onDelete: (member: Member) => void; // Callback to trigger deletion
 }
 
-const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClose, member }) => {
+const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClose, member, onEdit, onDelete }) => {
     const [assignedPackages, setAssignedPackages] = useState<AssignedPackage[]>([]);
     const [availablePackages, setAvailablePackages] = useState<Package[]>([]);
     const [loadingAssignedPackages, setLoadingAssignedPackages] = useState(false);
@@ -541,7 +542,11 @@ const MemberDetailModal: React.FC<MemberDetailModalProps> = ({ isVisible, onClos
                 </div>
                 */}
 
-                <button onClick={onClose} className="close-button">Kapat</button> {/* CSS for styling */}
+                <div className="modal-main-actions">
+                    <button onClick={() => onEdit(member)} className="edit-button">Düzenle</button>
+                    <button onClick={() => onDelete(member)} className="delete-button">Sil</button>
+                    <button onClick={onClose} className="close-button">Kapat</button>
+                </div>
             </div>
         </div>
     );

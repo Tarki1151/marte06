@@ -19,7 +19,7 @@ const ReportTableChart: React.FC<ReportTableChartProps> = ({ data, columns, char
     <div className="report-table-chart card">
       {chartTitle && <h3>{chartTitle}</h3>}
       {/* Basit Bar Chart */}
-      <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', height: 160, gap: 12, margin: '1rem 0' }}>
+      <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', height: 160, gap: 12, margin: '0.5rem 0' }}>
         {chartData.map((row, idx) => (
           <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 36 }}>
             <div
