@@ -58,6 +58,8 @@ export function isWithinAvailability(availability: FirebaseFirestore.DocumentDat
  * add up to enough." Same reasoning as every other "sayan her şey
  * callable'da" case in this schema.
  */
+import { computeCancellationDeadline, isBeforeDeadline } from './cancellationDeadline';
+
 export const bookPtSessions = onCall(
   { region: 'europe-west1' },
   async (request) => {
@@ -193,6 +195,21 @@ export const bookPtSessions = onCall(
       const trainerName = trainerMembership!.userDisplayName ?? trainerMembership!.userEmail ?? 'Antrenör';
       const memberName = membershipSnap.data()?.userDisplayName ?? membershipSnap.data()?.userEmail ?? 'Üye';
 
+      // The deadline is frozen at booking, not recomputed at cancellation.
+      // A gym that tightens its notice period next week must not retroactively
+      // move the line under sessions somebody already booked — "the rule was
+      // different when I booked" is a fair objection, and this is what makes
+      // it unnecessary. It is also the number the member is shown up front.
+      const tenantSnap = await tx.get(db.doc(`tenants/${tenantId}`));
+      const tenantData = tenantSnap.data();
+      const deadlines = slots.map((slot) =>
+        computeCancellationDeadline({
+          sessionStart: slot,
+          cancellationHours: tenantData?.cancellationHours as number | undefined,
+          openingHours: tenantData?.openingHours as Record<string, { open: string; close: string } | null> | undefined,
+        }),
+      );
+
       slots.forEach((slot, i) => {
         tx.set(sessionRefs[i], {
           tenantId,
@@ -204,6 +221,7 @@ export const bookPtSessions = onCall(
           durationMinutes: availability.slotMinutes ?? 60,
           status: 'scheduled',
           creditId: creditIdBySlot[i],
+          cancellationDeadlineAt: admin.firestore.Timestamp.fromDate(deadlines[i]),
           createdAt: now,
           updatedAt: now,
         });
@@ -240,10 +258,17 @@ export const bookPtSessions = onCall(
  * "credit sessions cancel here, everything else cancels by direct write."
  *
  * Refund policy: the trainer or an admin cancelling always refunds — the
- * member didn't cause the cancellation. A member cancelling refunds only
- * if it's at least `tenants/{tenantId}.cancellationHours` (default 24)
- * before the appointment; later than that, the credit burns, which is why
- * the client shows this explicitly before the member confirms.
+ * member didn't cause the cancellation. A member cancelling refunds only if
+ * they are inside the session's own `cancellationDeadlineAt`, frozen when the
+ * session was booked (see `computeCancellationDeadline`); later than that the
+ * credit burns, which is why the client states it before the member confirms.
+ * Sessions booked before that field existed fall back to the plain
+ * `cancellationHours` arithmetic.
+ *
+ * Every cancellation writes down who did it, when, and whether the credit came
+ * back. Before this the row kept only `status` and `updatedAt`, so "I didn't
+ * come, why was my lesson taken" had no answer anywhere — the gym could only
+ * assert, and the member could only disagree.
  */
 export const cancelPtSession = onCall(
   { region: 'europe-west1' },
@@ -298,10 +323,22 @@ export const cancelPtSession = onCall(
         // branch and got no refund at all — worse than if the child had
         // cancelled it themselves.
         if ((isMember || isGuardian) && !shouldRefund) {
-          const tenantSnap = await tx.get(db.doc(`tenants/${session.tenantId}`));
-          const cancellationHours = (tenantSnap.data()?.cancellationHours as number | undefined) ?? 24;
-          const hoursUntilSession = ((session.date as FirebaseFirestore.Timestamp).toMillis() - Date.now()) / 3600000;
-          shouldRefund = hoursUntilSession >= cancellationHours;
+          const stored = session.cancellationDeadlineAt as FirebaseFirestore.Timestamp | undefined;
+          if (stored) {
+            shouldRefund = isBeforeDeadline(stored.toDate(), new Date());
+          } else {
+            // Booked before deadlines were stored. Recompute from the gym's
+            // current setting — the same answer the old code gave, and the
+            // only one available for these rows.
+            const tenantSnap = await tx.get(db.doc(`tenants/${session.tenantId}`));
+            const tenantData = tenantSnap.data();
+            const deadline = computeCancellationDeadline({
+              sessionStart: (session.date as FirebaseFirestore.Timestamp).toDate(),
+              cancellationHours: tenantData?.cancellationHours as number | undefined,
+              openingHours: tenantData?.openingHours as Record<string, { open: string; close: string } | null> | undefined,
+            });
+            shouldRefund = isBeforeDeadline(deadline, new Date());
+          }
         }
         if (shouldRefund) {
           const credit = creditSnap.data()!;
@@ -313,7 +350,16 @@ export const cancelPtSession = onCall(
         }
       }
 
-      tx.update(sessionRef, { status: 'cancelled', updatedAt: admin.firestore.Timestamp.now() });
+      tx.update(sessionRef, {
+        status: 'cancelled',
+        cancelledAt: admin.firestore.Timestamp.now(),
+        cancelledBy: uid,
+        // Who, in the member's terms — the row has to survive a role change
+        // later without the reason for the refund becoming unreadable.
+        cancelledByRole: isMember ? 'member' : isGuardian ? 'guardian' : isTrainer ? 'trainer' : 'admin',
+        creditRefunded: refunded,
+        updatedAt: admin.firestore.Timestamp.now(),
+      });
       return { refunded };
     });
 
