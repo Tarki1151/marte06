@@ -383,10 +383,27 @@ export const expirePendingPackageChangeRequests = onSchedule(
  * payment rather than editing it. `syncMemberEntitlements` recomputes the
  * access mirror on its own from the status change.
  *
- * Refuses when the package's credits are already booked into future
- * appointments. Silently cancelling someone's appointments to tidy up an
- * admin's mistake is a worse outcome than making the admin cancel them
- * deliberately first, and the error says exactly how many are in the way.
+ * `access` decides what happens at the door (PKG-11, 7c):
+ *
+ * - `'immediate'` — the historical behaviour and the right one for a
+ *   mis-assignment: `endsAt` is pulled to now, credits are revoked, the
+ *   entitlement mirror disappears and the member is stopped at check-in.
+ *   Refuses while the package's credits are booked into future appointments;
+ *   silently cancelling someone's appointments to tidy up an admin's mistake
+ *   is worse than making the admin cancel them deliberately, and the error
+ *   says how many are in the way.
+ *
+ * - `'until-end'` — the member paid for a period and keeps it. `endsAt`,
+ *   credits and booked appointments all stand; only renewal stops. Nothing
+ *   is blocking here by design: there is nothing to protect the member from.
+ *   The row still records who ended it and why.
+ *
+ * `'until-end'` deliberately leaves `status: 'active'` rather than inventing
+ * a fourth state. The status field answers one question — "does this grant
+ * access right now?" — and the answer is yes until `endsAt`.
+ * `syncMemberEntitlements` already keys off `status === 'active' && endsAt >
+ * now`, so a new status would have meant teaching every reader about it;
+ * `cancelledAt` carries the other fact without moving the first one.
  */
 export const cancelPackageAssignment = onCall({ region: 'europe-west1' }, async (request) => {
   const uid = request.auth?.uid;
@@ -394,6 +411,8 @@ export const cancelPackageAssignment = onCall({ region: 'europe-west1' }, async 
 
   const assignmentId = String(request.data?.assignmentId ?? '');
   const reason = String(request.data?.reason ?? '').trim();
+  // Defaults to the old behaviour so an un-updated client keeps working.
+  const access = request.data?.access === 'until-end' ? 'until-end' : 'immediate';
   if (!assignmentId || !reason) {
     throw new HttpsError('invalid-argument', 'Atama ve gerekçe gerekiyor.');
   }
@@ -421,8 +440,10 @@ export const cancelPackageAssignment = onCall({ region: 'europe-west1' }, async 
     .where('sourcePackageId', '==', assignmentId)
     .get();
 
-  // Any future appointment paid for out of this package blocks the undo.
-  const creditIds = creditsSnap.docs.map((d) => d.id);
+  // Any future appointment paid for out of this package blocks the undo —
+  // but only when access is being cut off. Under 'until-end' those
+  // appointments stay valid, so there is nothing to block.
+  const creditIds = access === 'immediate' ? creditsSnap.docs.map((d) => d.id) : [];
   if (creditIds.length > 0) {
     // `in` caps at 30 values; a single assignment never produces that many
     // credit rows, but chunking keeps a future change from silently
@@ -447,26 +468,38 @@ export const cancelPackageAssignment = onCall({ region: 'europe-west1' }, async 
     }
   }
 
+  const now = admin.firestore.Timestamp.now();
   const batch = db.batch();
   batch.update(assignmentRef, {
-    status: 'cancelled',
     cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
     cancelledBy: uid,
     cancellationReason: reason,
+    cancellationAccess: access,
+    ...(access === 'immediate'
+      ? // Pulling `endsAt` back is what actually shuts the door: the rules and
+        // the entitlement mirror both compare it against the clock, and a
+        // status change alone would leave a cache that only refreshes on write.
+        { status: 'cancelled', endsAt: now }
+      : {}),
   });
-  // Spent credits keep their `used` count: the member really did take those
-  // lessons, and zeroing it would make the trainer's past sessions unexplained.
-  creditsSnap.docs.forEach((d) => batch.update(d.ref, { status: 'revoked' }));
+  if (access === 'immediate') {
+    // Spent credits keep their `used` count: the member really did take those
+    // lessons, and zeroing it would make the trainer's past sessions unexplained.
+    creditsSnap.docs.forEach((d) => batch.update(d.ref, { status: 'revoked' }));
+  }
   await batch.commit();
 
+  const endsAt = (assignment.endsAt as FirebaseFirestore.Timestamp).toDate();
   await sendPushToUser(
     assignment.memberId,
-    'Paketin geri alındı',
-    `${assignment.packageName} paketin salon tarafından geri alındı. Gerekçe: ${reason}`,
+    access === 'immediate' ? 'Paketin geri alındı' : 'Paketin yenilenmeyecek',
+    access === 'immediate'
+      ? `${assignment.packageName} paketin salon tarafından geri alındı. Gerekçe: ${reason}`
+      : `${assignment.packageName} paketin ${endsAt.toLocaleDateString('tr-TR')} tarihinde bitecek ve yenilenmeyecek. O güne kadar salonu kullanmaya devam edebilirsin.`,
     { screen: 'member/index' },
   );
 
-  return { revokedCredits: creditsSnap.size };
+  return { revokedCredits: access === 'immediate' ? creditsSnap.size : 0 };
 });
 
 /**
