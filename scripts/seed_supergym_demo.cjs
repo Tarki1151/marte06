@@ -183,7 +183,7 @@ function build() {
   });
 
   // --- üyelikler ---
-  for (const p of PEOPLE) {
+  PEOPLE.forEach((p, i) => {
     const isTrainer = p.key.startsWith('antrenor');
     put('tenant_memberships', T + '_' + p.uid, {
       userId: p.uid, tenantId: T, tenantCode: TENANT_CODE, tenantName: TENANT_NAME,
@@ -191,10 +191,12 @@ function build() {
       status: 'active', shortCode: p.shortCode,
       userDisplayName: p.name, userEmail: p.email,
       phone: p.phone, birthDate: Timestamp.fromDate(p.birthDate),
-      requestedAt: at(-150), approvedAt: at(-150),
+      // Katılımlar aylara yayılıyor: hepsi tek güne düşünce büyüme
+      // grafiği tek çubuk oluyor ve tanıtım görüntüsünde hiçbir şey anlatmıyor.
+      requestedAt: at(-172 + i * 8, 10, 0), approvedAt: at(-170 + i * 8, 10, 0),
       demoSeed: 'supergym-88',
     });
-  }
+  });
 
   // --- atanmış paketler, hak önbelleği, krediler ---
   MEMBERS.forEach((m, i) => {
@@ -253,7 +255,7 @@ function build() {
       tenantId: T, memberId: m.uid, memberName: m.name,
       amount: p.price, method: i % 3 === 0 ? 'cash' : 'bank_transfer',
       status: 'confirmed', kind: 'charge', note: p.name + ' paketi',
-      createdAt: at(-40 + i, 11, 0), confirmedAt: at(-40 + i, 11, 30),
+      createdAt: at(-76 + i * 4, 11, 0), confirmedAt: at(-76 + i * 4, 11, 30),
       demoSeed: 'supergym-88',
     });
   });

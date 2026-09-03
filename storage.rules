@@ -16,11 +16,16 @@ service firebase.storage {
     // GymEntra multi-tenant logos: public read (shown in-app to every
     // member), write restricted to that tenant's active admin — checked
     // against the same tenant_memberships doc the Firestore rules use.
+    // Reads `roles`, not the singular `role`. The old field was dropped from
+    // every membership on 27 Aug 2026 (drop_legacy_role_field.cjs) and this
+    // rule was missed, so it had been comparing against a field that no
+    // longer exists — every logo upload failed with permission-denied and
+    // nothing pointed at the rule.
     function isGymEntraTenantAdmin(tenantId) {
       let membershipPath = /databases/(default)/documents/tenant_memberships/$(tenantId + '_' + request.auth.uid);
       return request.auth != null &&
         firestore.exists(membershipPath) &&
-        firestore.get(membershipPath).data.role == 'admin' &&
+        'admin' in firestore.get(membershipPath).data.roles &&
         firestore.get(membershipPath).data.status == 'active';
     }
     match /tenant-logos/{tenantId} {
