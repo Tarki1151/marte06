@@ -90,6 +90,7 @@ function isWithinAvailability(availability, slot) {
  * add up to enough." Same reasoning as every other "sayan her şey
  * callable'da" case in this schema.
  */
+const cancellationDeadline_1 = require("./cancellationDeadline");
 exports.bookPtSessions = (0, https_1.onCall)({ region: 'europe-west1' }, async (request) => {
     var _a;
     const uid = (_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid;
@@ -207,6 +208,18 @@ exports.bookPtSessions = (0, https_1.onCall)({ region: 'europe-west1' }, async (
         }
         const trainerName = (_c = (_b = trainerMembership.userDisplayName) !== null && _b !== void 0 ? _b : trainerMembership.userEmail) !== null && _c !== void 0 ? _c : 'Antrenör';
         const memberName = (_g = (_e = (_d = membershipSnap.data()) === null || _d === void 0 ? void 0 : _d.userDisplayName) !== null && _e !== void 0 ? _e : (_f = membershipSnap.data()) === null || _f === void 0 ? void 0 : _f.userEmail) !== null && _g !== void 0 ? _g : 'Üye';
+        // The deadline is frozen at booking, not recomputed at cancellation.
+        // A gym that tightens its notice period next week must not retroactively
+        // move the line under sessions somebody already booked — "the rule was
+        // different when I booked" is a fair objection, and this is what makes
+        // it unnecessary. It is also the number the member is shown up front.
+        const tenantSnap = await tx.get(db.doc(`tenants/${tenantId}`));
+        const tenantData = tenantSnap.data();
+        const deadlines = slots.map((slot) => (0, cancellationDeadline_1.computeCancellationDeadline)({
+            sessionStart: slot,
+            cancellationHours: tenantData === null || tenantData === void 0 ? void 0 : tenantData.cancellationHours,
+            openingHours: tenantData === null || tenantData === void 0 ? void 0 : tenantData.openingHours,
+        }));
         slots.forEach((slot, i) => {
             var _a;
             tx.set(sessionRefs[i], {
@@ -219,6 +232,7 @@ exports.bookPtSessions = (0, https_1.onCall)({ region: 'europe-west1' }, async (
                 durationMinutes: (_a = availability.slotMinutes) !== null && _a !== void 0 ? _a : 60,
                 status: 'scheduled',
                 creditId: creditIdBySlot[i],
+                cancellationDeadlineAt: admin.firestore.Timestamp.fromDate(deadlines[i]),
                 createdAt: now,
                 updatedAt: now,
             });
@@ -252,10 +266,17 @@ exports.bookPtSessions = (0, https_1.onCall)({ region: 'europe-west1' }, async (
  * "credit sessions cancel here, everything else cancels by direct write."
  *
  * Refund policy: the trainer or an admin cancelling always refunds — the
- * member didn't cause the cancellation. A member cancelling refunds only
- * if it's at least `tenants/{tenantId}.cancellationHours` (default 24)
- * before the appointment; later than that, the credit burns, which is why
- * the client shows this explicitly before the member confirms.
+ * member didn't cause the cancellation. A member cancelling refunds only if
+ * they are inside the session's own `cancellationDeadlineAt`, frozen when the
+ * session was booked (see `computeCancellationDeadline`); later than that the
+ * credit burns, which is why the client states it before the member confirms.
+ * Sessions booked before that field existed fall back to the plain
+ * `cancellationHours` arithmetic.
+ *
+ * Every cancellation writes down who did it, when, and whether the credit came
+ * back. Before this the row kept only `status` and `updatedAt`, so "I didn't
+ * come, why was my lesson taken" had no answer anywhere — the gym could only
+ * assert, and the member could only disagree.
  */
 exports.cancelPtSession = (0, https_1.onCall)({ region: 'europe-west1' }, async (request) => {
     var _a;
@@ -268,7 +289,7 @@ exports.cancelPtSession = (0, https_1.onCall)({ region: 'europe-west1' }, async 
     const db = admin.firestore();
     const sessionRef = db.doc(`pt_sessions/${sessionId}`);
     const result = await db.runTransaction(async (tx) => {
-        var _a, _b, _c;
+        var _a;
         const sessionSnap = await tx.get(sessionRef);
         if (!sessionSnap.exists)
             throw new https_1.HttpsError('not-found', 'Randevu bulunamadı.');
@@ -309,10 +330,23 @@ exports.cancelPtSession = (0, https_1.onCall)({ region: 'europe-west1' }, async 
             // branch and got no refund at all — worse than if the child had
             // cancelled it themselves.
             if ((isMember || isGuardian) && !shouldRefund) {
-                const tenantSnap = await tx.get(db.doc(`tenants/${session.tenantId}`));
-                const cancellationHours = (_c = (_b = tenantSnap.data()) === null || _b === void 0 ? void 0 : _b.cancellationHours) !== null && _c !== void 0 ? _c : 24;
-                const hoursUntilSession = (session.date.toMillis() - Date.now()) / 3600000;
-                shouldRefund = hoursUntilSession >= cancellationHours;
+                const stored = session.cancellationDeadlineAt;
+                if (stored) {
+                    shouldRefund = (0, cancellationDeadline_1.isBeforeDeadline)(stored.toDate(), new Date());
+                }
+                else {
+                    // Booked before deadlines were stored. Recompute from the gym's
+                    // current setting — the same answer the old code gave, and the
+                    // only one available for these rows.
+                    const tenantSnap = await tx.get(db.doc(`tenants/${session.tenantId}`));
+                    const tenantData = tenantSnap.data();
+                    const deadline = (0, cancellationDeadline_1.computeCancellationDeadline)({
+                        sessionStart: session.date.toDate(),
+                        cancellationHours: tenantData === null || tenantData === void 0 ? void 0 : tenantData.cancellationHours,
+                        openingHours: tenantData === null || tenantData === void 0 ? void 0 : tenantData.openingHours,
+                    });
+                    shouldRefund = (0, cancellationDeadline_1.isBeforeDeadline)(deadline, new Date());
+                }
             }
             if (shouldRefund) {
                 const credit = creditSnap.data();
@@ -320,7 +354,16 @@ exports.cancelPtSession = (0, https_1.onCall)({ region: 'europe-west1' }, async 
                 refunded = true;
             }
         }
-        tx.update(sessionRef, { status: 'cancelled', updatedAt: admin.firestore.Timestamp.now() });
+        tx.update(sessionRef, {
+            status: 'cancelled',
+            cancelledAt: admin.firestore.Timestamp.now(),
+            cancelledBy: uid,
+            // Who, in the member's terms — the row has to survive a role change
+            // later without the reason for the refund becoming unreadable.
+            cancelledByRole: isMember ? 'member' : isGuardian ? 'guardian' : isTrainer ? 'trainer' : 'admin',
+            creditRefunded: refunded,
+            updatedAt: admin.firestore.Timestamp.now(),
+        });
         return { refunded };
     });
     console.log(`Session ${sessionId} cancelled by ${uid}, refunded=${result.refunded}`);

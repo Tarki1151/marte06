@@ -46,6 +46,7 @@ export const promoteFromClassWaitlist = onDocumentUpdated(
       'Yerin açıldı 🎉',
       `"${after.name}" dersinde bekleme listesinden çıktın, yerin hazır.`,
       { screen: 'member/classes' },
+      'bookings',
     );
 
     console.log(`Promoted ${promoted} from waitlist of class ${event.params.classId}`);

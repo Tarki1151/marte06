@@ -33,8 +33,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnClassCancelled = exports.notifyAdminsOnMemberLeft = exports.notifyAdminsOnJoinRequest = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentReversed = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = void 0;
+exports.sendClassReminders = exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnClassCancelled = exports.notifyAdminsOnMemberLeft = exports.notifyAdminsOnJoinRequest = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentReversed = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = void 0;
 exports.notifyTenantAdmins = notifyTenantAdmins;
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-functions/v2/firestore");
 const push_1 = require("./push");
@@ -47,7 +48,7 @@ exports.notifyOnMembershipApproved = (0, firestore_1.onDocumentUpdated)({ docume
         return;
     if (before.status === 'active' || after.status !== 'active')
         return;
-    await (0, push_1.sendPushToUser)(after.userId, 'Üyeliğin onaylandı 🎉', `${after.tenantName} ailesine hoş geldin! Üyelik kartın artık hazır.`, { screen: 'member/card' });
+    await (0, push_1.sendPushToUser)(after.userId, 'Üyeliğin onaylandı 🎉', `${after.tenantName} ailesine hoş geldin! Üyelik kartın artık hazır.`, { screen: 'member/card' }, 'account');
 });
 /** GymEntra: a member-submitted payment notice was confirmed or rejected. */
 exports.notifyOnPaymentStatusChange = (0, firestore_1.onDocumentUpdated)({ document: 'payments/{paymentId}', region: 'europe-west1' }, async (event) => {
@@ -60,13 +61,10 @@ exports.notifyOnPaymentStatusChange = (0, firestore_1.onDocumentUpdated)({ docum
         return;
     const amountLabel = `₺${Number(after.amount).toLocaleString('tr-TR')}`;
     if (after.status === 'confirmed') {
-        await (0, push_1.sendPushToUser)(after.memberId, 'Ödemen onaylandı ✓', `${amountLabel} tutarındaki ödemen onaylandı.`, {
-            screen: 'member/payments',
-            paymentId: event.params.paymentId,
-        });
+        await (0, push_1.sendPushToUser)(after.memberId, 'Ödemen onaylandı ✓', `${amountLabel} tutarındaki ödemen onaylandı.`, { screen: 'member/payments', paymentId: event.params.paymentId }, 'payments');
     }
     else if (after.status === 'rejected') {
-        await (0, push_1.sendPushToUser)(after.memberId, 'Ödemen onaylanmadı', `${amountLabel} tutarındaki ödeme bildirimin reddedildi. Detay için salonla iletişime geç.`, { screen: 'member/payments', paymentId: event.params.paymentId });
+        await (0, push_1.sendPushToUser)(after.memberId, 'Ödemen onaylanmadı', `${amountLabel} tutarındaki ödeme bildirimin reddedildi. Detay için salonla iletişime geç.`, { screen: 'member/payments', paymentId: event.params.paymentId }, 'payments');
     }
 });
 /**
@@ -91,8 +89,8 @@ exports.notifyOnPaymentReversed = (0, firestore_1.onDocumentUpdated)({ document:
     const amountLabel = `₺${Number(after.amount).toLocaleString('tr-TR')}`;
     const reason = (_e = after.reversalReason) === null || _e === void 0 ? void 0 : _e.trim();
     const detail = reason ? ` Gerekçe: ${reason}` : '';
-    await (0, push_1.sendPushToUser)(after.memberId, 'Ödeme kaydın düzeltildi', `${amountLabel} tutarındaki kaydın salon tarafından düzeltildi.${detail}`, { screen: 'member/payments', paymentId: event.params.paymentId });
-    await notifyTenantAdmins(after.tenantId, 'Ödeme kaydı düzeltildi', `${(_f = after.memberName) !== null && _f !== void 0 ? _f : 'Bir üye'} · ${amountLabel}${detail}`, { screen: 'admin/payments', paymentId: event.params.paymentId }, 
+    await (0, push_1.sendPushToUser)(after.memberId, 'Ödeme kaydın düzeltildi', `${amountLabel} tutarındaki kaydın salon tarafından düzeltildi.${detail}`, { screen: 'member/payments', paymentId: event.params.paymentId }, 'payments');
+    await notifyTenantAdmins(after.tenantId, 'Ödeme kaydı düzeltildi', `${(_f = after.memberName) !== null && _f !== void 0 ? _f : 'Bir üye'} · ${amountLabel}${detail}`, { screen: 'admin/payments', paymentId: event.params.paymentId }, 'payments', 
     // The admin who made the correction already knows.
     after.reversedBy);
 });
@@ -105,7 +103,7 @@ exports.notifyOnProgramAssigned = (0, firestore_1.onDocumentUpdated)({ document:
         return;
     if (before.status === 'active' || after.status !== 'active')
         return;
-    await (0, push_1.sendPushToUser)(after.memberId, 'Yeni programın hazır 💪', `Antrenörün senin için "${after.name}" programını hazırladı.`, { screen: 'member/workout' });
+    await (0, push_1.sendPushToUser)(after.memberId, 'Yeni programın hazır 💪', `Antrenörün senin için "${after.name}" programını hazırladı.`, { screen: 'member/workout' }, 'programs');
 });
 /**
  * GymEntra (PKG-6): notifies the member a swap is waiting on them.
@@ -117,7 +115,7 @@ exports.notifyOnPackageChangeRequested = (0, firestore_1.onDocumentCreated)({ do
     const data = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
     if (!data)
         return;
-    await (0, push_1.sendPushToUser)(data.memberId, 'Paket teklifin var', `${(_c = (_b = data.proposedSummary) === null || _b === void 0 ? void 0 : _b.packageName) !== null && _c !== void 0 ? _c : 'Yeni paket'} için bir teklif bekliyor.`, { screen: 'member/index' });
+    await (0, push_1.sendPushToUser)(data.memberId, 'Paket teklifin var', `${(_c = (_b = data.proposedSummary) === null || _b === void 0 ? void 0 : _b.packageName) !== null && _c !== void 0 ? _c : 'Yeni paket'} için bir teklif bekliyor.`, { screen: 'member/index' }, 'packages');
 });
 /**
  * Pushes to every ACTIVE admin of a gym.
@@ -126,7 +124,7 @@ exports.notifyOnPackageChangeRequested = (0, firestore_1.onDocumentCreated)({ do
  * admins, and whoever happens to own the tenant document is not necessarily
  * the one working the desk today.
  */
-async function notifyTenantAdmins(tenantId, title, body, data, 
+async function notifyTenantAdmins(tenantId, title, body, data, category, 
 /** Skip one admin — the one who performed the action already knows, and a
  *  push telling you what you just did is noise people learn to dismiss. */
 exceptUserId) {
@@ -140,7 +138,7 @@ exceptUserId) {
     await Promise.all(admins.docs
         .map((d) => d.data().userId)
         .filter((userId) => userId !== exceptUserId)
-        .map((userId) => (0, push_1.sendPushToUser)(userId, title, body, data)));
+        .map((userId) => (0, push_1.sendPushToUser)(userId, title, body, data, category)));
 }
 /**
  * GymEntra: a join request is waiting for the gym's approval.
@@ -163,7 +161,7 @@ exports.notifyAdminsOnJoinRequest = (0, firestore_1.onDocumentWritten)({ documen
         return;
     const who = after.userDisplayName || after.userEmail || 'Biri';
     const returning = before !== undefined;
-    await notifyTenantAdmins(after.tenantId, 'Yeni katılım isteği', returning ? `${who} salona tekrar katılmak istiyor.` : `${who} salona katılmak istiyor.`, { screen: 'admin/members' });
+    await notifyTenantAdmins(after.tenantId, 'Yeni katılım isteği', returning ? `${who} salona tekrar katılmak istiyor.` : `${who} salona katılmak istiyor.`, { screen: 'admin/members' }, 'account');
 });
 /**
  * GymEntra: tells the gym's admins that someone walked away.
@@ -186,9 +184,7 @@ exports.notifyAdminsOnMemberLeft = (0, firestore_1.onDocumentUpdated)({ document
     if (before.status === 'left' || after.status !== 'left')
         return;
     const who = after.userDisplayName || after.userEmail || 'Bir üye';
-    await notifyTenantAdmins(after.tenantId, 'Bir üye salondan ayrıldı', `${who} üyeliğini sonlandırdı.`, {
-        screen: 'admin/members',
-    });
+    await notifyTenantAdmins(after.tenantId, 'Bir üye salondan ayrıldı', `${who} üyeliğini sonlandırdı.`, { screen: 'admin/members' }, 'account');
 });
 /**
  * GymEntra: a class was cancelled — tell the people who had booked it.
@@ -218,7 +214,7 @@ exports.notifyOnClassCancelled = (0, firestore_1.onDocumentDeleted)({ document: 
         : '';
     await Promise.all(affected.map((uid) => {
         var _a;
-        return (0, push_1.sendPushToUser)(uid, 'Ders iptal edildi', `${(_a = data.name) !== null && _a !== void 0 ? _a : 'Ders'}${whenLabel ? ` — ${whenLabel}` : ''} iptal edildi.`, { screen: 'member/classes' });
+        return (0, push_1.sendPushToUser)(uid, 'Ders iptal edildi', `${(_a = data.name) !== null && _a !== void 0 ? _a : 'Ders'}${whenLabel ? ` — ${whenLabel}` : ''} iptal edildi.`, { screen: 'member/classes' }, 'bookings');
     }));
 });
 /**
@@ -235,7 +231,7 @@ exports.notifyAdminsOnPaymentNotice = (0, firestore_1.onDocumentCreated)({ docum
     if (!data || data.status !== 'pending')
         return;
     const amountLabel = `₺${Number(data.amount).toLocaleString('tr-TR')}`;
-    await notifyTenantAdmins(data.tenantId, 'Yeni ödeme bildirimi', `${(_b = data.memberName) !== null && _b !== void 0 ? _b : 'Bir üye'} · ${amountLabel} onayını bekliyor.`, { screen: 'admin/payments', paymentId: event.params.paymentId }, 
+    await notifyTenantAdmins(data.tenantId, 'Yeni ödeme bildirimi', `${(_b = data.memberName) !== null && _b !== void 0 ? _b : 'Bir üye'} · ${amountLabel} onayını bekliyor.`, { screen: 'admin/payments', paymentId: event.params.paymentId }, 'payments', 
     // A guardian filing for their child is the payer, not an admin — but if
     // an admin ever files on someone's behalf they already know.
     data.submittedBy);
@@ -258,7 +254,7 @@ exports.notifyAdminsOnPackageChangeResponse = (0, firestore_1.onDocumentUpdated)
     if (after.status !== 'approved' && after.status !== 'rejected')
         return;
     const accepted = after.status === 'approved';
-    await notifyTenantAdmins(after.tenantId, accepted ? 'Paket teklifi kabul edildi' : 'Paket teklifi reddedildi', `${(_e = after.memberName) !== null && _e !== void 0 ? _e : 'Bir üye'} · ${(_g = (_f = after.proposedSummary) === null || _f === void 0 ? void 0 : _f.packageName) !== null && _g !== void 0 ? _g : 'paket değişikliği'}`, { screen: 'admin/members' });
+    await notifyTenantAdmins(after.tenantId, accepted ? 'Paket teklifi kabul edildi' : 'Paket teklifi reddedildi', `${(_e = after.memberName) !== null && _e !== void 0 ? _e : 'Bir üye'} · ${(_g = (_f = after.proposedSummary) === null || _f === void 0 ? void 0 : _f.packageName) !== null && _g !== void 0 ? _g : 'paket değişikliği'}`, { screen: 'admin/members' }, 'packages');
 });
 /**
  * ADMIN-3: a member cancelled a PT appointment.
@@ -283,6 +279,71 @@ exports.notifyTrainerOnSessionCancelled = (0, firestore_1.onDocumentUpdated)({ d
     const whenLabel = when
         ? `${when.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} ${when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`
         : 'Bir randevu';
-    await (0, push_1.sendPushToUser)(after.trainerId, 'Randevu iptal edildi', `${(_f = after.memberName) !== null && _f !== void 0 ? _f : 'Bir üye'} · ${whenLabel} randevusunu iptal etti.`, { screen: 'trainer/calendar' });
+    await (0, push_1.sendPushToUser)(after.trainerId, 'Randevu iptal edildi', `${(_f = after.memberName) !== null && _f !== void 0 ? _f : 'Bir üye'} · ${whenLabel} randevusunu iptal etti.`, { screen: 'trainer/calendar' }, 'bookings');
+});
+/**
+ * P4-3 / PER-13: "dersin bir saat sonra".
+ *
+ * Runs every 15 minutes and picks up anything starting in the next window,
+ * rather than scheduling a job per booking: a per-booking timer has to be
+ * cancelled when the booking is, rescheduled when the class moves, and
+ * reconciled after every deploy. Sweeping a short window is stateless and
+ * survives all three.
+ *
+ * `reminderSentAt` is written on the document, so a redelivered run or an
+ * overlapping window cannot send twice — the same discipline
+ * `notifyExpiringPackages` uses for its day-count.
+ *
+ * Deliberately shipped **after** notification preferences, not before: a
+ * reminder is the notification people are most likely to find intrusive, and
+ * adding it while there was no way to turn it off is how an app teaches
+ * people to disable notifications wholesale.
+ */
+const REMINDER_LEAD_MINUTES = 60;
+const REMINDER_WINDOW_MINUTES = 20;
+exports.sendClassReminders = (0, scheduler_1.onSchedule)({ schedule: 'every 15 minutes', region: 'europe-west1', timeZone: 'Europe/Istanbul' }, async () => {
+    var _a, _b;
+    const db = admin.firestore();
+    const now = Date.now();
+    const from = admin.firestore.Timestamp.fromMillis(now + REMINDER_LEAD_MINUTES * 60000);
+    const to = admin.firestore.Timestamp.fromMillis(now + (REMINDER_LEAD_MINUTES + REMINDER_WINDOW_MINUTES) * 60000);
+    let sent = 0;
+    const classes = await db
+        .collection('classes')
+        .where('date', '>=', from)
+        .where('date', '<', to)
+        .get();
+    for (const doc of classes.docs) {
+        const c = doc.data();
+        if (c.reminderSentAt)
+            continue;
+        const when = c.date.toDate();
+        const timeLabel = when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        // Only people holding a seat. The waitlist is told when a seat opens,
+        // not reminded about a class they are not in.
+        const booked = ((_a = c.bookedUserIds) !== null && _a !== void 0 ? _a : []);
+        await Promise.all(booked.map((uid) => {
+            var _a;
+            return (0, push_1.sendPushToUser)(uid, 'Dersin yaklaşıyor', `${(_a = c.name) !== null && _a !== void 0 ? _a : 'Ders'} bugün ${timeLabel}'de başlıyor.`, { screen: 'member/classes' }, 'bookings');
+        }));
+        await doc.ref.update({ reminderSentAt: admin.firestore.Timestamp.now() });
+        sent += booked.length;
+    }
+    const sessions = await db
+        .collection('pt_sessions')
+        .where('date', '>=', from)
+        .where('date', '<', to)
+        .get();
+    for (const doc of sessions.docs) {
+        const s = doc.data();
+        if (s.reminderSentAt || s.status !== 'scheduled')
+            continue;
+        const when = s.date.toDate();
+        const timeLabel = when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        await (0, push_1.sendPushToUser)(s.memberId, 'Randevun yaklaşıyor', `${(_b = s.trainerName) !== null && _b !== void 0 ? _b : 'Antrenörün'} ile ${timeLabel} randevun var.`, { screen: 'member/bookings' }, 'bookings');
+        await doc.ref.update({ reminderSentAt: admin.firestore.Timestamp.now() });
+        sent += 1;
+    }
+    console.log(`sendClassReminders: ${sent} hatırlatma gönderildi`);
 });
 //# sourceMappingURL=notifications.js.map

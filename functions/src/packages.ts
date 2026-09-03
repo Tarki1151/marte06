@@ -332,6 +332,8 @@ export const approvePackageChange = onCall(
         req.createdBy,
         'Paket teklifi reddedildi',
         `${req.memberName}, ${req.proposedSummary?.packageName ?? 'önerilen paketi'} kabul etmedi.`,
+        undefined,
+        'packages',
       );
     } else if (result.status === 'promotion-expired') {
       const req = (await requestRef.get()).data()!;
@@ -339,6 +341,8 @@ export const approvePackageChange = onCall(
         req.createdBy,
         'Promosyon süresi doldu',
         `${req.memberName} teklifi onaylamak istedi ama bağlı promosyonun süresi bu arada doldu. Teklifi güncel fiyatla yenile.`,
+        undefined,
+        'packages',
       );
     }
 
@@ -497,6 +501,7 @@ export const cancelPackageAssignment = onCall({ region: 'europe-west1' }, async 
       ? `${assignment.packageName} paketin salon tarafından geri alındı. Gerekçe: ${reason}`
       : `${assignment.packageName} paketin ${endsAt.toLocaleDateString('tr-TR')} tarihinde bitecek ve yenilenmeyecek. O güne kadar salonu kullanmaya devam edebilirsin.`,
     { screen: 'member/index' },
+    'packages',
   );
 
   return { revokedCredits: access === 'immediate' ? creditsSnap.size : 0 };
@@ -548,12 +553,14 @@ export const notifyExpiringPackages = onSchedule(
           'Paketin bitmek üzere',
           `${p.packageName} paketin ${label} sona eriyor.`,
           { screen: 'member/index' },
+          'packages',
         );
         await notifyTenantAdmins(
           p.tenantId,
           'Paket bitmek üzere',
           `${p.memberName ?? 'Bir üye'} · ${p.packageName} ${label} bitiyor.`,
           { screen: 'admin/members' },
+          'packages',
         );
         await docSnap.ref.update({ notifiedExpiryAt: daysLeft });
         notified += 1;
@@ -678,6 +685,7 @@ export const freezeMemberPackage = onCall({ region: 'europe-west1' }, async (req
     'Üyeliğin donduruldu',
     `${result.packageName} paketin ${result.resumesAt.toLocaleDateString('tr-TR')} tarihine kadar duraklatıldı. Bitiş tarihin ${days} gün ileri alındı.`,
     { screen: 'member/index' },
+    'packages',
   );
 
   return { resumesAt: result.resumesAt.toISOString(), shiftedCredits: result.shiftedCredits };

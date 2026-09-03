@@ -90,6 +90,7 @@ export const requestGuardian = onCall({ region: 'europe-west1' }, async (request
     'Ebeveyn onayı isteniyor',
     `${child.userDisplayName ?? child.userEmail ?? 'Bir üye'} seni ebeveyni olarak gösterdi.`,
     { screen: '/member/guardian-requests' },
+    'account',
   );
 
   return { guardianName: guardian.userDisplayName ?? guardian.userEmail ?? '' };
@@ -149,6 +150,7 @@ export const respondToGuardian = onCall({ region: 'europe-west1' }, async (reque
       ? 'Kaydın salon yöneticisinin onayını bekliyor.'
       : 'Gösterdiğin ebeveyn onay vermedi. Başka bir ebeveyn seçebilirsin.',
     { screen: '/member/edit-profile' },
+    'account',
   );
 
   return { approved: approve };

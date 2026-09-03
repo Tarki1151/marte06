@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelGroupClassBooking = exports.bookGroupClass = exports.requestPasswordReset = exports.emailExerciseReport = exports.revenueCatWebhook = exports.respondToGuardian = exports.requestGuardian = exports.cancelPtSession = exports.bookPtSessions = exports.notifyExpiringPackages = exports.cancelPackageAssignment = exports.expirePendingPackageChangeRequests = exports.approvePackageChange = exports.creditRollover = exports.reconcileMirrors = exports.syncTenantNameToMemberships = exports.syncTrainerBusySlots = exports.syncMemberEntitlements = exports.syncPackageAssignmentCount = exports.syncActiveMemberCount = exports.promoteFromClassWaitlist = exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnPaymentReversed = exports.notifyOnClassCancelled = exports.notifyAdminsOnJoinRequest = exports.notifyAdminsOnMemberLeft = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = exports.removeMemberFromTenant = exports.assignMembershipShortCode = exports.deleteMyAccount = exports.seedAdminClaims = exports.setAdminClaim = void 0;
+exports.cancelGroupClassBooking = exports.bookGroupClass = exports.requestPasswordReset = exports.emailExerciseReport = exports.uploadTenantLogo = exports.revenueCatWebhook = exports.respondToGuardian = exports.requestGuardian = exports.cancelPtSession = exports.bookPtSessions = exports.sweepPackageStatuses = exports.freezeMemberPackage = exports.notifyExpiringPackages = exports.cancelPackageAssignment = exports.expirePendingPackageChangeRequests = exports.approvePackageChange = exports.creditRollover = exports.reconcileMirrors = exports.syncTenantNameToMemberships = exports.syncTrainerBusySlots = exports.syncMemberEntitlements = exports.syncPackageAssignmentCount = exports.syncActiveMemberCount = exports.promoteFromClassWaitlist = exports.sendClassReminders = exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnPaymentReversed = exports.notifyOnClassCancelled = exports.notifyAdminsOnJoinRequest = exports.notifyAdminsOnMemberLeft = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = exports.removeMemberFromTenant = exports.assignMembershipShortCode = exports.deleteMyAccount = exports.seedAdminClaims = exports.setAdminClaim = void 0;
 // Must be the very first import in this file — see instrument.ts's own
 // comment for why (Sentry's Firebase auto-instrumentation only works if it
 // runs before the modules it instruments are loaded).
@@ -70,6 +70,7 @@ Object.defineProperty(exports, "notifyOnPaymentReversed", { enumerable: true, ge
 Object.defineProperty(exports, "notifyAdminsOnPaymentNotice", { enumerable: true, get: function () { return notifications_1.notifyAdminsOnPaymentNotice; } });
 Object.defineProperty(exports, "notifyAdminsOnPackageChangeResponse", { enumerable: true, get: function () { return notifications_1.notifyAdminsOnPackageChangeResponse; } });
 Object.defineProperty(exports, "notifyTrainerOnSessionCancelled", { enumerable: true, get: function () { return notifications_1.notifyTrainerOnSessionCancelled; } });
+Object.defineProperty(exports, "sendClassReminders", { enumerable: true, get: function () { return notifications_1.sendClassReminders; } });
 var classes_1 = require("./classes");
 Object.defineProperty(exports, "promoteFromClassWaitlist", { enumerable: true, get: function () { return classes_1.promoteFromClassWaitlist; } });
 var sync_1 = require("./sync");
@@ -85,6 +86,8 @@ Object.defineProperty(exports, "approvePackageChange", { enumerable: true, get: 
 Object.defineProperty(exports, "expirePendingPackageChangeRequests", { enumerable: true, get: function () { return packages_1.expirePendingPackageChangeRequests; } });
 Object.defineProperty(exports, "cancelPackageAssignment", { enumerable: true, get: function () { return packages_1.cancelPackageAssignment; } });
 Object.defineProperty(exports, "notifyExpiringPackages", { enumerable: true, get: function () { return packages_1.notifyExpiringPackages; } });
+Object.defineProperty(exports, "freezeMemberPackage", { enumerable: true, get: function () { return packages_1.freezeMemberPackage; } });
+Object.defineProperty(exports, "sweepPackageStatuses", { enumerable: true, get: function () { return packages_1.sweepPackageStatuses; } });
 var sessions_1 = require("./sessions");
 Object.defineProperty(exports, "bookPtSessions", { enumerable: true, get: function () { return sessions_1.bookPtSessions; } });
 Object.defineProperty(exports, "cancelPtSession", { enumerable: true, get: function () { return sessions_1.cancelPtSession; } });
@@ -93,6 +96,8 @@ Object.defineProperty(exports, "requestGuardian", { enumerable: true, get: funct
 Object.defineProperty(exports, "respondToGuardian", { enumerable: true, get: function () { return guardians_1.respondToGuardian; } });
 var subscriptions_1 = require("./subscriptions");
 Object.defineProperty(exports, "revenueCatWebhook", { enumerable: true, get: function () { return subscriptions_1.revenueCatWebhook; } });
+var branding_1 = require("./branding");
+Object.defineProperty(exports, "uploadTenantLogo", { enumerable: true, get: function () { return branding_1.uploadTenantLogo; } });
 var exerciseReports_1 = require("./exerciseReports");
 Object.defineProperty(exports, "emailExerciseReport", { enumerable: true, get: function () { return exerciseReports_1.emailExerciseReport; } });
 var passwordReset_1 = require("./passwordReset");

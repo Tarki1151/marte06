@@ -1,7 +1,8 @@
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 
-import { sendPushToUser } from './push';
+import { NotificationCategory, sendPushToUser } from './push';
 
 /** GymEntra: member's join request just got approved. */
 export const notifyOnMembershipApproved = onDocumentUpdated(
@@ -17,6 +18,7 @@ export const notifyOnMembershipApproved = onDocumentUpdated(
       'Üyeliğin onaylandı 🎉',
       `${after.tenantName} ailesine hoş geldin! Üyelik kartın artık hazır.`,
       { screen: 'member/card' },
+      'account',
     );
   },
 );
@@ -32,16 +34,20 @@ export const notifyOnPaymentStatusChange = onDocumentUpdated(
 
     const amountLabel = `₺${Number(after.amount).toLocaleString('tr-TR')}`;
     if (after.status === 'confirmed') {
-      await sendPushToUser(after.memberId, 'Ödemen onaylandı ✓', `${amountLabel} tutarındaki ödemen onaylandı.`, {
-        screen: 'member/payments',
-        paymentId: event.params.paymentId,
-      });
+      await sendPushToUser(
+        after.memberId,
+        'Ödemen onaylandı ✓',
+        `${amountLabel} tutarındaki ödemen onaylandı.`,
+        { screen: 'member/payments', paymentId: event.params.paymentId },
+        'payments',
+      );
     } else if (after.status === 'rejected') {
       await sendPushToUser(
         after.memberId,
         'Ödemen onaylanmadı',
         `${amountLabel} tutarındaki ödeme bildirimin reddedildi. Detay için salonla iletişime geç.`,
         { screen: 'member/payments', paymentId: event.params.paymentId },
+        'payments',
       );
     }
   },
@@ -75,6 +81,7 @@ export const notifyOnPaymentReversed = onDocumentUpdated(
       'Ödeme kaydın düzeltildi',
       `${amountLabel} tutarındaki kaydın salon tarafından düzeltildi.${detail}`,
       { screen: 'member/payments', paymentId: event.params.paymentId },
+      'payments',
     );
 
     await notifyTenantAdmins(
@@ -82,6 +89,7 @@ export const notifyOnPaymentReversed = onDocumentUpdated(
       'Ödeme kaydı düzeltildi',
       `${after.memberName ?? 'Bir üye'} · ${amountLabel}${detail}`,
       { screen: 'admin/payments', paymentId: event.params.paymentId },
+      'payments',
       // The admin who made the correction already knows.
       after.reversedBy as string | undefined,
     );
@@ -102,6 +110,7 @@ export const notifyOnProgramAssigned = onDocumentUpdated(
       'Yeni programın hazır 💪',
       `Antrenörün senin için "${after.name}" programını hazırladı.`,
       { screen: 'member/workout' },
+      'programs',
     );
   },
 );
@@ -121,6 +130,7 @@ export const notifyOnPackageChangeRequested = onDocumentCreated(
       'Paket teklifin var',
       `${data.proposedSummary?.packageName ?? 'Yeni paket'} için bir teklif bekliyor.`,
       { screen: 'member/index' },
+      'packages',
     );
   },
 );
@@ -136,7 +146,8 @@ export async function notifyTenantAdmins(
   tenantId: string,
   title: string,
   body: string,
-  data?: Record<string, unknown>,
+  data: Record<string, unknown> | undefined,
+  category: NotificationCategory,
   /** Skip one admin — the one who performed the action already knows, and a
    *  push telling you what you just did is noise people learn to dismiss. */
   exceptUserId?: string,
@@ -153,7 +164,7 @@ export async function notifyTenantAdmins(
     admins.docs
       .map((d) => d.data().userId as string)
       .filter((userId) => userId !== exceptUserId)
-      .map((userId) => sendPushToUser(userId, title, body, data)),
+      .map((userId) => sendPushToUser(userId, title, body, data, category)),
   );
 }
 
@@ -183,6 +194,7 @@ export const notifyAdminsOnJoinRequest = onDocumentWritten(
       'Yeni katılım isteği',
       returning ? `${who} salona tekrar katılmak istiyor.` : `${who} salona katılmak istiyor.`,
       { screen: 'admin/members' },
+      'account',
     );
   },
 );
@@ -208,9 +220,13 @@ export const notifyAdminsOnMemberLeft = onDocumentUpdated(
     if (before.status === 'left' || after.status !== 'left') return;
 
     const who = after.userDisplayName || after.userEmail || 'Bir üye';
-    await notifyTenantAdmins(after.tenantId, 'Bir üye salondan ayrıldı', `${who} üyeliğini sonlandırdı.`, {
-      screen: 'admin/members',
-    });
+    await notifyTenantAdmins(
+      after.tenantId,
+      'Bir üye salondan ayrıldı',
+      `${who} üyeliğini sonlandırdı.`,
+      { screen: 'admin/members' },
+      'account',
+    );
   },
 );
 
@@ -249,6 +265,7 @@ export const notifyOnClassCancelled = onDocumentDeleted(
           'Ders iptal edildi',
           `${data.name ?? 'Ders'}${whenLabel ? ` — ${whenLabel}` : ''} iptal edildi.`,
           { screen: 'member/classes' },
+          'bookings',
         ),
       ),
     );
@@ -275,6 +292,7 @@ export const notifyAdminsOnPaymentNotice = onDocumentCreated(
       'Yeni ödeme bildirimi',
       `${data.memberName ?? 'Bir üye'} · ${amountLabel} onayını bekliyor.`,
       { screen: 'admin/payments', paymentId: event.params.paymentId },
+      'payments',
       // A guardian filing for their child is the payer, not an admin — but if
       // an admin ever files on someone's behalf they already know.
       data.submittedBy as string | undefined,
@@ -304,6 +322,7 @@ export const notifyAdminsOnPackageChangeResponse = onDocumentUpdated(
       accepted ? 'Paket teklifi kabul edildi' : 'Paket teklifi reddedildi',
       `${after.memberName ?? 'Bir üye'} · ${after.proposedSummary?.packageName ?? 'paket değişikliği'}`,
       { screen: 'admin/members' },
+      'packages',
     );
   },
 );
@@ -336,6 +355,93 @@ export const notifyTrainerOnSessionCancelled = onDocumentUpdated(
       'Randevu iptal edildi',
       `${after.memberName ?? 'Bir üye'} · ${whenLabel} randevusunu iptal etti.`,
       { screen: 'trainer/calendar' },
+      'bookings',
     );
+  },
+);
+
+/**
+ * P4-3 / PER-13: "dersin bir saat sonra".
+ *
+ * Runs every 15 minutes and picks up anything starting in the next window,
+ * rather than scheduling a job per booking: a per-booking timer has to be
+ * cancelled when the booking is, rescheduled when the class moves, and
+ * reconciled after every deploy. Sweeping a short window is stateless and
+ * survives all three.
+ *
+ * `reminderSentAt` is written on the document, so a redelivered run or an
+ * overlapping window cannot send twice — the same discipline
+ * `notifyExpiringPackages` uses for its day-count.
+ *
+ * Deliberately shipped **after** notification preferences, not before: a
+ * reminder is the notification people are most likely to find intrusive, and
+ * adding it while there was no way to turn it off is how an app teaches
+ * people to disable notifications wholesale.
+ */
+const REMINDER_LEAD_MINUTES = 60;
+const REMINDER_WINDOW_MINUTES = 20;
+
+export const sendClassReminders = onSchedule(
+  { schedule: 'every 15 minutes', region: 'europe-west1', timeZone: 'Europe/Istanbul' },
+  async () => {
+    const db = admin.firestore();
+    const now = Date.now();
+    const from = admin.firestore.Timestamp.fromMillis(now + REMINDER_LEAD_MINUTES * 60000);
+    const to = admin.firestore.Timestamp.fromMillis(
+      now + (REMINDER_LEAD_MINUTES + REMINDER_WINDOW_MINUTES) * 60000,
+    );
+
+    let sent = 0;
+
+    const classes = await db
+      .collection('classes')
+      .where('date', '>=', from)
+      .where('date', '<', to)
+      .get();
+    for (const doc of classes.docs) {
+      const c = doc.data();
+      if (c.reminderSentAt) continue;
+      const when = (c.date as FirebaseFirestore.Timestamp).toDate();
+      const timeLabel = when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      // Only people holding a seat. The waitlist is told when a seat opens,
+      // not reminded about a class they are not in.
+      const booked = (c.bookedUserIds ?? []) as string[];
+      await Promise.all(
+        booked.map((uid) =>
+          sendPushToUser(
+            uid,
+            'Dersin yaklaşıyor',
+            `${c.name ?? 'Ders'} bugün ${timeLabel}'de başlıyor.`,
+            { screen: 'member/classes' },
+            'bookings',
+          ),
+        ),
+      );
+      await doc.ref.update({ reminderSentAt: admin.firestore.Timestamp.now() });
+      sent += booked.length;
+    }
+
+    const sessions = await db
+      .collection('pt_sessions')
+      .where('date', '>=', from)
+      .where('date', '<', to)
+      .get();
+    for (const doc of sessions.docs) {
+      const s = doc.data();
+      if (s.reminderSentAt || s.status !== 'scheduled') continue;
+      const when = (s.date as FirebaseFirestore.Timestamp).toDate();
+      const timeLabel = when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      await sendPushToUser(
+        s.memberId as string,
+        'Randevun yaklaşıyor',
+        `${s.trainerName ?? 'Antrenörün'} ile ${timeLabel} randevun var.`,
+        { screen: 'member/bookings' },
+        'bookings',
+      );
+      await doc.ref.update({ reminderSentAt: admin.firestore.Timestamp.now() });
+      sent += 1;
+    }
+
+    console.log(`sendClassReminders: ${sent} hatırlatma gönderildi`);
   },
 );

@@ -107,7 +107,7 @@ exports.requestGuardian = (0, https_1.onCall)({ region: 'europe-west1' }, async 
         guardianConsentAt: admin.firestore.FieldValue.delete(),
         guardianConsentVersion: admin.firestore.FieldValue.delete(),
     });
-    await (0, push_1.sendPushToUser)(guardian.userId, 'Ebeveyn onayı isteniyor', `${(_j = (_h = child.userDisplayName) !== null && _h !== void 0 ? _h : child.userEmail) !== null && _j !== void 0 ? _j : 'Bir üye'} seni ebeveyni olarak gösterdi.`, { screen: '/member/guardian-requests' });
+    await (0, push_1.sendPushToUser)(guardian.userId, 'Ebeveyn onayı isteniyor', `${(_j = (_h = child.userDisplayName) !== null && _h !== void 0 ? _h : child.userEmail) !== null && _j !== void 0 ? _j : 'Bir üye'} seni ebeveyni olarak gösterdi.`, { screen: '/member/guardian-requests' }, 'account');
     return { guardianName: (_l = (_k = guardian.userDisplayName) !== null && _k !== void 0 ? _k : guardian.userEmail) !== null && _l !== void 0 ? _l : '' };
 });
 /**
@@ -157,7 +157,7 @@ exports.respondToGuardian = (0, https_1.onCall)({ region: 'europe-west1' }, asyn
     }
     await (0, push_1.sendPushToUser)(child.userId, approve ? 'Ebeveyn onayın alındı' : 'Ebeveyn onayı verilmedi', approve
         ? 'Kaydın salon yöneticisinin onayını bekliyor.'
-        : 'Gösterdiğin ebeveyn onay vermedi. Başka bir ebeveyn seçebilirsin.', { screen: '/member/edit-profile' });
+        : 'Gösterdiğin ebeveyn onay vermedi. Başka bir ebeveyn seçebilirsin.', { screen: '/member/edit-profile' }, 'account');
     return { approved: approve };
 });
 //# sourceMappingURL=guardians.js.map

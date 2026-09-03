@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyExpiringPackages = exports.cancelPackageAssignment = exports.expirePendingPackageChangeRequests = exports.approvePackageChange = exports.creditRollover = void 0;
+exports.sweepPackageStatuses = exports.freezeMemberPackage = exports.notifyExpiringPackages = exports.cancelPackageAssignment = exports.expirePendingPackageChangeRequests = exports.approvePackageChange = exports.creditRollover = void 0;
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -317,11 +317,11 @@ exports.approvePackageChange = (0, https_1.onCall)({ region: 'europe-west1' }, a
     });
     if (result.status === 'rejected') {
         const req = (await requestRef.get()).data();
-        await (0, push_1.sendPushToUser)(req.createdBy, 'Paket teklifi reddedildi', `${req.memberName}, ${(_c = (_b = req.proposedSummary) === null || _b === void 0 ? void 0 : _b.packageName) !== null && _c !== void 0 ? _c : 'önerilen paketi'} kabul etmedi.`);
+        await (0, push_1.sendPushToUser)(req.createdBy, 'Paket teklifi reddedildi', `${req.memberName}, ${(_c = (_b = req.proposedSummary) === null || _b === void 0 ? void 0 : _b.packageName) !== null && _c !== void 0 ? _c : 'önerilen paketi'} kabul etmedi.`, undefined, 'packages');
     }
     else if (result.status === 'promotion-expired') {
         const req = (await requestRef.get()).data();
-        await (0, push_1.sendPushToUser)(req.createdBy, 'Promosyon süresi doldu', `${req.memberName} teklifi onaylamak istedi ama bağlı promosyonun süresi bu arada doldu. Teklifi güncel fiyatla yenile.`);
+        await (0, push_1.sendPushToUser)(req.createdBy, 'Promosyon süresi doldu', `${req.memberName} teklifi onaylamak istedi ama bağlı promosyonun süresi bu arada doldu. Teklifi güncel fiyatla yenile.`, undefined, 'packages');
     }
     console.log(`Package change ${requestId}: ${result.status}`);
     return result;
@@ -358,18 +358,37 @@ exports.expirePendingPackageChangeRequests = (0, scheduler_1.onSchedule)({ sched
  * payment rather than editing it. `syncMemberEntitlements` recomputes the
  * access mirror on its own from the status change.
  *
- * Refuses when the package's credits are already booked into future
- * appointments. Silently cancelling someone's appointments to tidy up an
- * admin's mistake is a worse outcome than making the admin cancel them
- * deliberately first, and the error says exactly how many are in the way.
+ * `access` decides what happens at the door (PKG-11, 7c):
+ *
+ * - `'immediate'` — the historical behaviour and the right one for a
+ *   mis-assignment: `endsAt` is pulled to now, credits are revoked, the
+ *   entitlement mirror disappears and the member is stopped at check-in.
+ *   Refuses while the package's credits are booked into future appointments;
+ *   silently cancelling someone's appointments to tidy up an admin's mistake
+ *   is worse than making the admin cancel them deliberately, and the error
+ *   says how many are in the way.
+ *
+ * - `'until-end'` — the member paid for a period and keeps it. `endsAt`,
+ *   credits and booked appointments all stand; only renewal stops. Nothing
+ *   is blocking here by design: there is nothing to protect the member from.
+ *   The row still records who ended it and why.
+ *
+ * `'until-end'` deliberately leaves `status: 'active'` rather than inventing
+ * a fourth state. The status field answers one question — "does this grant
+ * access right now?" — and the answer is yes until `endsAt`.
+ * `syncMemberEntitlements` already keys off `status === 'active' && endsAt >
+ * now`, so a new status would have meant teaching every reader about it;
+ * `cancelledAt` carries the other fact without moving the first one.
  */
 exports.cancelPackageAssignment = (0, https_1.onCall)({ region: 'europe-west1' }, async (request) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     const uid = (_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid;
     if (!uid)
         throw new https_1.HttpsError('unauthenticated', 'Giriş yapmış olmanız gerekiyor.');
     const assignmentId = String((_c = (_b = request.data) === null || _b === void 0 ? void 0 : _b.assignmentId) !== null && _c !== void 0 ? _c : '');
     const reason = String((_e = (_d = request.data) === null || _d === void 0 ? void 0 : _d.reason) !== null && _e !== void 0 ? _e : '').trim();
+    // Defaults to the old behaviour so an un-updated client keeps working.
+    const access = ((_f = request.data) === null || _f === void 0 ? void 0 : _f.access) === 'until-end' ? 'until-end' : 'immediate';
     if (!assignmentId || !reason) {
         throw new https_1.HttpsError('invalid-argument', 'Atama ve gerekçe gerekiyor.');
     }
@@ -381,7 +400,7 @@ exports.cancelPackageAssignment = (0, https_1.onCall)({ region: 'europe-west1' }
     const assignment = assignmentSnap.data();
     const callerSnap = await db.doc(`tenant_memberships/${assignment.tenantId}_${uid}`).get();
     const caller = callerSnap.data();
-    const callerIsAdmin = callerSnap.exists && (caller === null || caller === void 0 ? void 0 : caller.status) === 'active' && ((_f = caller === null || caller === void 0 ? void 0 : caller.roles) !== null && _f !== void 0 ? _f : []).includes('admin');
+    const callerIsAdmin = callerSnap.exists && (caller === null || caller === void 0 ? void 0 : caller.status) === 'active' && ((_g = caller === null || caller === void 0 ? void 0 : caller.roles) !== null && _g !== void 0 ? _g : []).includes('admin');
     if (!callerIsAdmin) {
         throw new https_1.HttpsError('permission-denied', 'Bu işlem için salon yöneticisi olmanız gerekiyor.');
     }
@@ -392,8 +411,10 @@ exports.cancelPackageAssignment = (0, https_1.onCall)({ region: 'europe-west1' }
         .collection('member_credits')
         .where('sourcePackageId', '==', assignmentId)
         .get();
-    // Any future appointment paid for out of this package blocks the undo.
-    const creditIds = creditsSnap.docs.map((d) => d.id);
+    // Any future appointment paid for out of this package blocks the undo —
+    // but only when access is being cut off. Under 'until-end' those
+    // appointments stay valid, so there is nothing to block.
+    const creditIds = access === 'immediate' ? creditsSnap.docs.map((d) => d.id) : [];
     if (creditIds.length > 0) {
         // `in` caps at 30 values; a single assignment never produces that many
         // credit rows, but chunking keeps a future change from silently
@@ -414,19 +435,25 @@ exports.cancelPackageAssignment = (0, https_1.onCall)({ region: 'europe-west1' }
             throw new https_1.HttpsError('failed-precondition', `Bu pakete bağlı ${blocking} yaklaşan randevu var. Önce randevuları iptal edin, sonra paketi geri alın.`);
         }
     }
+    const now = admin.firestore.Timestamp.now();
     const batch = db.batch();
-    batch.update(assignmentRef, {
-        status: 'cancelled',
-        cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
-        cancelledBy: uid,
-        cancellationReason: reason,
-    });
-    // Spent credits keep their `used` count: the member really did take those
-    // lessons, and zeroing it would make the trainer's past sessions unexplained.
-    creditsSnap.docs.forEach((d) => batch.update(d.ref, { status: 'revoked' }));
+    batch.update(assignmentRef, Object.assign({ cancelledAt: admin.firestore.FieldValue.serverTimestamp(), cancelledBy: uid, cancellationReason: reason, cancellationAccess: access }, (access === 'immediate'
+        ? // Pulling `endsAt` back is what actually shuts the door: the rules and
+            // the entitlement mirror both compare it against the clock, and a
+            // status change alone would leave a cache that only refreshes on write.
+            { status: 'cancelled', endsAt: now }
+        : {})));
+    if (access === 'immediate') {
+        // Spent credits keep their `used` count: the member really did take those
+        // lessons, and zeroing it would make the trainer's past sessions unexplained.
+        creditsSnap.docs.forEach((d) => batch.update(d.ref, { status: 'revoked' }));
+    }
     await batch.commit();
-    await (0, push_1.sendPushToUser)(assignment.memberId, 'Paketin geri alındı', `${assignment.packageName} paketin salon tarafından geri alındı. Gerekçe: ${reason}`, { screen: 'member/index' });
-    return { revokedCredits: creditsSnap.size };
+    const endsAt = assignment.endsAt.toDate();
+    await (0, push_1.sendPushToUser)(assignment.memberId, access === 'immediate' ? 'Paketin geri alındı' : 'Paketin yenilenmeyecek', access === 'immediate'
+        ? `${assignment.packageName} paketin salon tarafından geri alındı. Gerekçe: ${reason}`
+        : `${assignment.packageName} paketin ${endsAt.toLocaleDateString('tr-TR')} tarihinde bitecek ve yenilenmeyecek. O güne kadar salonu kullanmaya devam edebilirsin.`, { screen: 'member/index' }, 'packages');
+    return { revokedCredits: access === 'immediate' ? creditsSnap.size : 0 };
 });
 /**
  * ADMIN-3: memberships about to lapse.
@@ -465,12 +492,167 @@ exports.notifyExpiringPackages = (0, scheduler_1.onSchedule)({ schedule: 'every 
             if (p.notifiedExpiryAt === daysLeft)
                 continue;
             const label = daysLeft === 1 ? 'yarın' : `${daysLeft} gün sonra`;
-            await (0, push_1.sendPushToUser)(p.memberId, 'Paketin bitmek üzere', `${p.packageName} paketin ${label} sona eriyor.`, { screen: 'member/index' });
-            await (0, notifications_1.notifyTenantAdmins)(p.tenantId, 'Paket bitmek üzere', `${(_a = p.memberName) !== null && _a !== void 0 ? _a : 'Bir üye'} · ${p.packageName} ${label} bitiyor.`, { screen: 'admin/members' });
+            await (0, push_1.sendPushToUser)(p.memberId, 'Paketin bitmek üzere', `${p.packageName} paketin ${label} sona eriyor.`, { screen: 'member/index' }, 'packages');
+            await (0, notifications_1.notifyTenantAdmins)(p.tenantId, 'Paket bitmek üzere', `${(_a = p.memberName) !== null && _a !== void 0 ? _a : 'Bir üye'} · ${p.packageName} ${label} bitiyor.`, { screen: 'admin/members' }, 'packages');
             await docSnap.ref.update({ notifiedExpiryAt: daysLeft });
             notified += 1;
         }
     }
     console.log(`Paket bitiş uyarısı: ${notified} bildirim gönderildi.`);
+});
+/**
+ * PKG-10: an admin pauses a membership.
+ *
+ * A freeze is not a discount and not a refund — the member keeps the days
+ * they paid for, they just move. `endsAt` is pushed out by exactly the frozen
+ * span, and every credit sourced from this package has its expiry pushed the
+ * same way: otherwise freezing would quietly cost the member the periodic
+ * lessons they had banked, which is the opposite of what a pause is for.
+ *
+ * Quota and minimum length come from `freezePolicy`, **copied onto the
+ * assignment when it was sold**. A gym that tightens its policy next month
+ * must not retroactively shorten what this member bought — the same reasoning
+ * as the frozen cancellation deadline.
+ *
+ * Starts immediately rather than on a chosen future date. A scheduled freeze
+ * would need a job to switch it on, another to switch it off, and a rule for
+ * what happens when the member checks in on the boundary day; gyms freeze
+ * when someone tells them "I'm away from tomorrow", and starting now with an
+ * end date expresses that without the extra machinery.
+ */
+exports.freezeMemberPackage = (0, https_1.onCall)({ region: 'europe-west1' }, async (request) => {
+    var _a, _b, _c, _d;
+    const uid = (_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid;
+    if (!uid)
+        throw new https_1.HttpsError('unauthenticated', 'Giriş yapmış olmanız gerekiyor.');
+    const assignmentId = String((_c = (_b = request.data) === null || _b === void 0 ? void 0 : _b.assignmentId) !== null && _c !== void 0 ? _c : '');
+    const days = Number((_d = request.data) === null || _d === void 0 ? void 0 : _d.days);
+    if (!assignmentId || !Number.isInteger(days) || days <= 0) {
+        throw new https_1.HttpsError('invalid-argument', 'Atama ve gün sayısı gerekiyor.');
+    }
+    if (days > 365)
+        throw new https_1.HttpsError('invalid-argument', 'En fazla 365 gün dondurulabilir.');
+    const db = admin.firestore();
+    const assignmentRef = db.doc(`member_packages/${assignmentId}`);
+    const result = await db.runTransaction(async (tx) => {
+        var _a, _b, _c, _d, _e;
+        const snap = await tx.get(assignmentRef);
+        if (!snap.exists)
+            throw new https_1.HttpsError('not-found', 'Paket ataması bulunamadı.');
+        const pkg = snap.data();
+        const callerSnap = await tx.get(db.doc(`tenant_memberships/${pkg.tenantId}_${uid}`));
+        const caller = callerSnap.data();
+        if (!callerSnap.exists || (caller === null || caller === void 0 ? void 0 : caller.status) !== 'active' || !((_a = caller === null || caller === void 0 ? void 0 : caller.roles) !== null && _a !== void 0 ? _a : []).includes('admin')) {
+            throw new https_1.HttpsError('permission-denied', 'Bu işlem için salon yöneticisi olmanız gerekiyor.');
+        }
+        if (pkg.kind !== 'membership') {
+            throw new https_1.HttpsError('failed-precondition', 'Yalnızca üyelik paketi dondurulabilir.');
+        }
+        if (pkg.status === 'frozen')
+            throw new https_1.HttpsError('failed-precondition', 'Bu paket zaten dondurulmuş.');
+        if (pkg.status !== 'active')
+            throw new https_1.HttpsError('failed-precondition', 'Yalnızca aktif paket dondurulabilir.');
+        if (pkg.cancelledAt)
+            throw new https_1.HttpsError('failed-precondition', 'Sonlandırılmış paket dondurulamaz.');
+        const policy = pkg.freezePolicy;
+        if (!policy)
+            throw new https_1.HttpsError('failed-precondition', 'Bu pakette dondurma hakkı yok.');
+        const used = ((_b = pkg.freezes) !== null && _b !== void 0 ? _b : []).length;
+        const maxCount = (_c = policy.maxCount) !== null && _c !== void 0 ? _c : 0;
+        if (used >= maxCount) {
+            throw new https_1.HttpsError('failed-precondition', `Dondurma hakkı doldu (${maxCount} kez).`);
+        }
+        const minDays = (_d = policy.minDays) !== null && _d !== void 0 ? _d : 0;
+        if (days < minDays) {
+            throw new https_1.HttpsError('failed-precondition', `En az ${minDays} gün dondurulmalı.`);
+        }
+        const now = admin.firestore.Timestamp.now();
+        const endsAt = pkg.endsAt;
+        if (endsAt.toMillis() <= now.toMillis()) {
+            throw new https_1.HttpsError('failed-precondition', 'Süresi dolmuş paket dondurulamaz.');
+        }
+        const shiftMs = days * 86400000;
+        const freezeEndsAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + shiftMs);
+        // Credits sourced from this package move with it. Read inside the
+        // transaction so a rollover running at the same moment cannot leave one
+        // credit shifted and another not.
+        const creditsSnap = await tx.get(db.collection('member_credits').where('sourcePackageId', '==', assignmentId));
+        tx.update(assignmentRef, {
+            status: 'frozen',
+            endsAt: admin.firestore.Timestamp.fromMillis(endsAt.toMillis() + shiftMs),
+            frozenDays: ((_e = pkg.frozenDays) !== null && _e !== void 0 ? _e : 0) + days,
+            freezes: admin.firestore.FieldValue.arrayUnion({
+                startsAt: now,
+                endsAt: freezeEndsAt,
+                days,
+                createdBy: uid,
+                createdAt: now,
+            }),
+        });
+        creditsSnap.docs.forEach((d) => {
+            const expiresAt = d.data().expiresAt;
+            if (!expiresAt)
+                return;
+            tx.update(d.ref, {
+                expiresAt: admin.firestore.Timestamp.fromMillis(expiresAt.toMillis() + shiftMs),
+            });
+        });
+        return {
+            memberId: pkg.memberId,
+            packageName: pkg.packageName,
+            resumesAt: freezeEndsAt.toDate(),
+            shiftedCredits: creditsSnap.size,
+        };
+    });
+    await (0, push_1.sendPushToUser)(result.memberId, 'Üyeliğin donduruldu', `${result.packageName} paketin ${result.resumesAt.toLocaleDateString('tr-TR')} tarihine kadar duraklatıldı. Bitiş tarihin ${days} gün ileri alındı.`, { screen: 'member/index' }, 'packages');
+    return { resumesAt: result.resumesAt.toISOString(), shiftedCredits: result.shiftedCredits };
+});
+/**
+ * PKG-10 + PKG-12: the daily sweep that keeps `member_packages.status` honest.
+ *
+ * Two transitions nothing else performs:
+ *
+ * 1. **Un-freeze.** A frozen package drops out of `member_entitlements` (the
+ *    sync only caches `status === 'active'`), which is what closes group-class
+ *    booking during a pause. That cache is only rebuilt when the assignment is
+ *    written, so without this the member would stay locked out after their
+ *    freeze ended — the pause would silently become permanent.
+ *
+ * 2. **Expire.** `status` stayed `active` forever on a package whose `endsAt`
+ *    had passed. Every reader had to know to re-check the date, and the ones
+ *    that forgot reported a lapsed member as current.
+ *
+ * Idempotent by construction: both transitions are "set the field to what the
+ * dates already say", so a retried run is a no-op.
+ */
+exports.sweepPackageStatuses = (0, scheduler_1.onSchedule)({ schedule: 'every 24 hours', region: 'europe-west1', timeZone: 'Europe/Istanbul' }, async () => {
+    var _a;
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+    let resumed = 0;
+    const frozen = await db.collection('member_packages').where('status', '==', 'frozen').get();
+    for (const doc of frozen.docs) {
+        const freezes = ((_a = doc.data().freezes) !== null && _a !== void 0 ? _a : []);
+        const last = freezes[freezes.length - 1];
+        if (!(last === null || last === void 0 ? void 0 : last.endsAt) || last.endsAt.toMillis() > now.toMillis())
+            continue;
+        const endsAt = doc.data().endsAt;
+        // A freeze that outlived its own package resumes straight into expiry
+        // rather than back to active — the dates, not the order of the sweeps.
+        await doc.ref.update({ status: endsAt.toMillis() <= now.toMillis() ? 'expired' : 'active' });
+        resumed++;
+    }
+    let expired = 0;
+    const lapsed = await db
+        .collection('member_packages')
+        .where('status', '==', 'active')
+        .where('endsAt', '<=', now)
+        .limit(500)
+        .get();
+    for (const doc of lapsed.docs) {
+        await doc.ref.update({ status: 'expired' });
+        expired++;
+    }
+    console.log(`sweepPackageStatuses: ${resumed} çözüldü, ${expired} süresi doldu`);
 });
 //# sourceMappingURL=packages.js.map

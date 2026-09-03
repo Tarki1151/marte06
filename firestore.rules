@@ -51,6 +51,21 @@ service cloud.firestore {
      * The parent `tenants` doc is deliberately world-readable (join by
      * code), so sensitive fields must be written HERE, never there.
      */
+    /**
+     * A person's own notification preferences (P4-3).
+     *
+     * Keyed by uid, not by membership: the phone belongs to the person, not to
+     * a gym, and someone in two gyms does not want to mute the same category
+     * twice. Only the owner reads or writes it; Cloud Functions read it with
+     * the Admin SDK before every push.
+     *
+     * An absent document means "everything on" — see `wantsCategory`. Nothing
+     * writes it until the person actually changes a switch.
+     */
+    match /user_settings/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
     match /tenants/{tenantId}/private/{docId} {
       // Members, plus applicants still waiting on a decision — see isPendingIn.
       allow read: if isTenantMember(tenantId) || isPendingIn(tenantId);

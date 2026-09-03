@@ -39,7 +39,7 @@ exports.promoteFromClassWaitlist = (0, firestore_1.onDocumentUpdated)({ document
         bookedUserIds: nextBooked,
         waitlistUserIds: waitlist.slice(1),
     });
-    await (0, push_1.sendPushToUser)(promoted, 'Yerin açıldı 🎉', `"${after.name}" dersinde bekleme listesinden çıktın, yerin hazır.`, { screen: 'member/classes' });
+    await (0, push_1.sendPushToUser)(promoted, 'Yerin açıldı 🎉', `"${after.name}" dersinde bekleme listesinden çıktın, yerin hazır.`, { screen: 'member/classes' }, 'bookings');
     console.log(`Promoted ${promoted} from waitlist of class ${event.params.classId}`);
 });
 //# sourceMappingURL=classes.js.map
