@@ -13,26 +13,23 @@ service firebase.storage {
       allow write: if isAdmin();
     }
 
-    // GymEntra multi-tenant logos: public read (shown in-app to every
-    // member), write restricted to that tenant's active admin — checked
-    // against the same tenant_memberships doc the Firestore rules use.
-    // Reads `roles`, not the singular `role`. The old field was dropped from
-    // every membership on 27 Aug 2026 (drop_legacy_role_field.cjs) and this
-    // rule was missed, so it had been comparing against a field that no
-    // longer exists — every logo upload failed with permission-denied and
-    // nothing pointed at the rule.
-    function isGymEntraTenantAdmin(tenantId) {
-      let membershipPath = /databases/(default)/documents/tenant_memberships/$(tenantId + '_' + request.auth.uid);
-      return request.auth != null &&
-        firestore.exists(membershipPath) &&
-        'admin' in firestore.get(membershipPath).data.roles &&
-        firestore.get(membershipPath).data.status == 'active';
-    }
+    // GymEntra multi-tenant logos: public read (the join-by-code screen shows
+    // a gym's logo before any membership exists), and **no client write at
+    // all** — the `uploadTenantLogo` callable writes these with the Admin SDK
+    // after checking membership in code.
+    //
+    // This used to be a cross-service rule that read `tenant_memberships`
+    // from here. Three things made that the wrong foundation: it fails closed
+    // and silent (the client only ever sees `storage/unauthorized`, never
+    // that a Firestore lookup inside a rule was what failed); it needs an IAM
+    // grant that `firebase deploy` does not make, so a correct rule can still
+    // deny everyone; and it had been broken since the singular `role` field
+    // was dropped on 27 Aug 2026 without anyone noticing, because the only
+    // account that tested it carried the legacy global `admin` claim and
+    // passed through the other branch. A real gym owner has no such claim.
     match /tenant-logos/{tenantId} {
       allow read: if true;
-      allow write: if (isAdmin() || isGymEntraTenantAdmin(tenantId)) &&
-                     request.resource.size < 5 * 1024 * 1024 &&
-                     request.resource.contentType.matches('image/.*');
+      allow write: if false;
     }
 
     // Member-specific files (future: profile photos, documents)

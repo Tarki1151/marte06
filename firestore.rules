@@ -25,9 +25,16 @@ service cloud.firestore {
       // Branding edits (settings screen): any active tenant admin, not just
       // the original creator — matches every other admin-gated write in this
       // file. ownerUid/code stay immutable regardless of which path grants access.
+      // `get(..., '')` rather than `.ownerUid`: reading an absent map key is an
+      // ERROR in rules, not `null`, and an error denies the whole write. Gyms
+      // created by the backfill scripts have no `ownerUid`, so every settings
+      // save in those gyms failed — logo, name, colours, hours, all of it —
+      // with nothing pointing at this line. The field stays immutable either
+      // way: a request that introduces one compares 'X' against '' and is
+      // refused.
       allow update: if (
-        (isTenantAdmin(tenantId) || (isSignedIn() && resource.data.ownerUid == request.auth.uid)) &&
-        request.resource.data.ownerUid == resource.data.ownerUid &&
+        (isTenantAdmin(tenantId) || (isSignedIn() && resource.data.get('ownerUid', '') == request.auth.uid)) &&
+        request.resource.data.get('ownerUid', '') == resource.data.get('ownerUid', '') &&
         request.resource.data.code == resource.data.code &&
         // Server-owned: the seat tally is maintained by syncActiveMemberCount
         // and the subscription by verified store receipts. If the client could

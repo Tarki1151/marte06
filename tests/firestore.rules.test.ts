@@ -99,6 +99,36 @@ describe('Tenants and tenant memberships', () => {
     await assertSucceeds(db.doc('tenants/tarabya-marte').get());
   });
 
+  test('an admin can save settings in a gym that has no ownerUid', async () => {
+    // Regression, 3 Sep 2026. Gyms created by the backfill scripts carry no
+    // `ownerUid`, and the rule read `resource.data.ownerUid` directly.
+    // Reading an absent map key is an ERROR in rules, not null, and the error
+    // denied the write — so every settings save in those gyms failed (logo,
+    // name, colours, hours) with nothing pointing at the rule.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().doc('tenants/legacy-gym').set({
+        code: 'LEGACY-01',
+        name: 'Legacy Gym',
+      });
+      await context.firestore().doc('tenant_memberships/legacy-gym_admin-member-uid').set({
+        userId: 'admin-member-uid',
+        tenantId: 'legacy-gym',
+        status: 'active',
+        roles: ['admin'],
+      });
+    });
+
+    const db = testEnv.authenticatedContext('admin-member-uid').firestore();
+    await assertSucceeds(
+      db.doc('tenants/legacy-gym').update({ branding: { primaryColor: '#10B981' } }),
+    );
+  });
+
+  test('ownerUid stays immutable — an admin cannot introduce one', async () => {
+    const db = testEnv.authenticatedContext('admin-member-uid').firestore();
+    await assertFails(db.doc('tenants/tarabya-marte').update({ ownerUid: 'admin-member-uid' }));
+  });
+
   test('a user can create only their own pending member join request at the deterministic id', async () => {
     const db = testEnv.authenticatedContext('new-uid').firestore();
 
