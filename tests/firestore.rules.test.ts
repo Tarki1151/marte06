@@ -1747,7 +1747,13 @@ describe('Role model — multiple roles and delegated permissions', () => {
     status = 'active',
   ) {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context.firestore().doc(`tenant_memberships/${tenantId}_${uid}`).set({
+      const db = context.firestore();
+      // withinAdminLimit reads the parent tenant doc; in production one
+      // always exists (tenants are never deleted, and a membership cannot be
+      // created for a tenantId that was never created), but this suite seeds
+      // membership rows directly, so it has to keep that invariant itself.
+      await db.doc(`tenants/${tenantId}`).set({ code: tenantId, name: tenantId, ownerUid: 'boss' }, { merge: true });
+      await db.doc(`tenant_memberships/${tenantId}_${uid}`).set({
         userId: uid,
         tenantId,
         status,
@@ -2922,5 +2928,72 @@ describe('Package assignment stays closed to clients (ADMIN-4)', () => {
   test('an admin cannot hand-edit a credit balance either', async () => {
     const db = testEnv.authenticatedContext('boss').firestore();
     await assertFails(db.doc('member_credits/c1').update({ used: 0 }));
+  });
+});
+
+describe('Admin seat cap (3 per gym)', () => {
+  async function setupGym(activeAdminCount: number) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.doc(`tenants/${TENANT}`).set({
+        code: 'X-01', name: 'Gym', ownerUid: 'boss', activeAdminCount,
+      });
+      await db.doc(`tenant_memberships/${TENANT}_boss`).set({
+        userId: 'boss', tenantId: TENANT, status: 'active', roles: ['admin'], permissions: [],
+      });
+      await db.doc(`tenant_memberships/${TENANT}_candidate`).set({
+        userId: 'candidate', tenantId: TENANT, status: 'active', roles: ['member'], permissions: [],
+      });
+    });
+  }
+
+  test('promoting a member to admin succeeds under the cap', async () => {
+    await setupGym(2);
+    const db = testEnv.authenticatedContext('boss').firestore();
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_candidate`).update({ roles: ['member', 'admin'] }));
+  });
+
+  test('a fourth admin is refused — the client check is not the only gate', async () => {
+    await setupGym(3);
+    const db = testEnv.authenticatedContext('boss').firestore();
+    await assertFails(db.doc(`tenant_memberships/${TENANT}_candidate`).update({ roles: ['member', 'admin'] }));
+  });
+
+  test('a missing counter reads as under the limit — a pre-existing gym is not locked out', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.doc(`tenants/${TENANT}`).set({ code: 'X-01', name: 'Gym', ownerUid: 'boss' });
+      await db.doc(`tenant_memberships/${TENANT}_boss`).set({
+        userId: 'boss', tenantId: TENANT, status: 'active', roles: ['admin'], permissions: [],
+      });
+      await db.doc(`tenant_memberships/${TENANT}_candidate`).set({
+        userId: 'candidate', tenantId: TENANT, status: 'active', roles: ['member'], permissions: [],
+      });
+    });
+    const db = testEnv.authenticatedContext('boss').firestore();
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_candidate`).update({ roles: ['member', 'admin'] }));
+  });
+
+  test('editing an existing admin (e.g. demoting them) is not blocked by the cap they already occupy', async () => {
+    await setupGym(3);
+    const db = testEnv.authenticatedContext('boss').firestore();
+    await assertSucceeds(
+      db.doc(`tenant_memberships/${TENANT}_boss`).update({ roles: ['admin', 'trainer'] }),
+    );
+  });
+
+  test('demoting an admin out of the role is allowed at the cap — it only frees a seat', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.doc(`tenants/${TENANT}`).set({ code: 'X-01', name: 'Gym', ownerUid: 'boss', activeAdminCount: 3 });
+      await db.doc(`tenant_memberships/${TENANT}_boss`).set({
+        userId: 'boss', tenantId: TENANT, status: 'active', roles: ['admin'], permissions: [],
+      });
+      await db.doc(`tenant_memberships/${TENANT}_second`).set({
+        userId: 'second', tenantId: TENANT, status: 'active', roles: ['admin'], permissions: [],
+      });
+    });
+    const db = testEnv.authenticatedContext('boss').firestore();
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_second`).update({ roles: ['member'] }));
   });
 });

@@ -252,6 +252,21 @@ service cloud.firestore {
       }
 
       /**
+       * A gym may hold at most ADMIN_LIMIT admins. Small-studio reality is
+       * that admin means "has the keys" — payment ledger, branding, everyone
+       * else's role — and a cap keeps that list from drifting into "everyone
+       * who ever asked". Trainers are unlimited; only the admin seat is capped.
+       *
+       * Same shape as `withinMemberLimit`: rules cannot count documents, so
+       * `activeAdminCount` is denormalised by `syncActiveMemberCount` and read
+       * back here. A missing counter (a gym that predates this) reads as
+       * under the limit rather than locking every gym out at once.
+       */
+      function withinAdminLimit(tid) {
+        return get(/databases/$(database)/documents/tenants/$(tid)).data.get('activeAdminCount', 0) < 3;
+      }
+
+      /**
        * MEMBER-5b, decision 6: an under-18 member cannot be activated until
        * their parent has approved the link. The gym's approval and the
        * parent's are two separate gates and this is where they meet.
@@ -302,7 +317,13 @@ service cloud.firestore {
         // Never strip the last admin out of their own gym — the same guard
         // deleteMyAccount applies. Self-demotion has to go through a path
         // that can count the remaining admins, which rules cannot do.
-        (resource.data.userId != request.auth.uid || 'admin' in request.resource.data.get('roles', []));
+        (resource.data.userId != request.auth.uid || 'admin' in request.resource.data.get('roles', [])) &&
+        // The cap only fires on the write that GRANTS admin — someone already
+        // admin being edited for something else (permissions, a demotion)
+        // must not be blocked by a limit they are not the one hitting.
+        ('admin' in resource.data.get('roles', []) ||
+          !('admin' in request.resource.data.get('roles', [])) ||
+          withinAdminLimit(resource.data.tenantId));
       // An admin corrects a member's basic details. Names arrive from the
       // member's own sign-up (or the marte06 migration) and are routinely
       // wrong, abbreviated or missing a phone.

@@ -3,14 +3,19 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 
 /**
- * GymEntra: keeps `tenants/{id}.activeMemberCount` in step with reality.
+ * GymEntra: keeps two tallies on `tenants/{id}` in step with reality —
+ * `activeMemberCount` and `activeAdminCount`. Both exist for the same
+ * reason: a rule that needs to cap something cannot count documents, only
+ * read one, so the count is denormalised here and the rules read it back.
  *
- * The free-tier limit has to be enforceable on the server, but Firestore
- * rules cannot count documents — they can only read one. So the count is
- * denormalised here and the rules read it.
+ * One trigger rather than two identical ones on the same collection: every
+ * write to `tenant_memberships` already lands here, and a second listener
+ * would double the invocations to answer a second, unrelated question.
  *
- * Only the `member` role counts: trainers and admins are staff, and a gym
- * should never be pushed onto a paid plan by hiring a coach.
+ * `activeMemberCount` counts only the `member` role — trainers and admins
+ * are staff, and a gym should never be pushed onto a paid plan by hiring a
+ * coach. `activeAdminCount` counts `admin` regardless of what else the same
+ * person holds (an admin who also trains is still one of the three seats).
  */
 export const syncActiveMemberCount = onDocumentWritten(
   { document: 'tenant_memberships/{membershipId}', region: 'europe-west1' },
@@ -20,27 +25,43 @@ export const syncActiveMemberCount = onDocumentWritten(
     const tenantId = (after?.tenantId ?? before?.tenantId) as string | undefined;
     if (!tenantId) return;
 
-    const countsAsMember = (d: FirebaseFirestore.DocumentData | undefined) => {
+    const hasActiveRole = (d: FirebaseFirestore.DocumentData | undefined, role: string) => {
       if (!d || d.status !== 'active') return false;
       const roles: string[] = d.roles ?? (d.role ? [d.role] : []);
-      return roles.includes('member');
+      return roles.includes(role);
     };
 
-    // Nothing that affects the tally changed — skip the recount.
-    if (countsAsMember(before) === countsAsMember(after)) return;
+    const memberChanged = hasActiveRole(before, 'member') !== hasActiveRole(after, 'member');
+    const adminChanged = hasActiveRole(before, 'admin') !== hasActiveRole(after, 'admin');
+    // Nothing that affects either tally changed — skip the recount.
+    if (!memberChanged && !adminChanged) return;
 
     const db = admin.firestore();
-    const snap = await db
-      .collection('tenant_memberships')
-      .where('tenantId', '==', tenantId)
-      .where('status', '==', 'active')
-      .where('roles', 'array-contains', 'member')
-      .count()
-      .get();
+    const patch: Record<string, number> = {};
 
-    const activeMemberCount = snap.data().count;
-    await db.collection('tenants').doc(tenantId).set({ activeMemberCount }, { merge: true });
-    console.log(`Tenant ${tenantId} now has ${activeMemberCount} active member(s)`);
+    if (memberChanged) {
+      const snap = await db
+        .collection('tenant_memberships')
+        .where('tenantId', '==', tenantId)
+        .where('status', '==', 'active')
+        .where('roles', 'array-contains', 'member')
+        .count()
+        .get();
+      patch.activeMemberCount = snap.data().count;
+    }
+    if (adminChanged) {
+      const snap = await db
+        .collection('tenant_memberships')
+        .where('tenantId', '==', tenantId)
+        .where('status', '==', 'active')
+        .where('roles', 'array-contains', 'admin')
+        .count()
+        .get();
+      patch.activeAdminCount = snap.data().count;
+    }
+
+    await db.collection('tenants').doc(tenantId).set(patch, { merge: true });
+    console.log(`Tenant ${tenantId}:`, JSON.stringify(patch));
   },
 );
 
@@ -213,22 +234,32 @@ export const reconcileMirrors = onSchedule(
     let checked = 0;
     let fixed = 0;
 
-    // --- 1. tenants.activeMemberCount ---
+    // --- 1. tenants.activeMemberCount + activeAdminCount ---
+    // Both tallies are read by rules that cap something (free-tier seats,
+    // the three admin seats). Drift in either silently moves a limit, so
+    // both get the same weekly correction.
     const tenantsSnap = await db.collection('tenants').get();
     for (const tenantDoc of tenantsSnap.docs) {
       checked += 1;
-      const countSnap = await db
-        .collection('tenant_memberships')
-        .where('tenantId', '==', tenantDoc.id)
-        .where('status', '==', 'active')
-        .where('roles', 'array-contains', 'member')
-        .count()
-        .get();
-      const trueCount = countSnap.data().count;
-      if ((tenantDoc.data().activeMemberCount ?? 0) !== trueCount) {
-        await tenantDoc.ref.set({ activeMemberCount: trueCount }, { merge: true });
+      const countRole = async (role: 'member' | 'admin') =>
+        (
+          await db
+            .collection('tenant_memberships')
+            .where('tenantId', '==', tenantDoc.id)
+            .where('status', '==', 'active')
+            .where('roles', 'array-contains', role)
+            .count()
+            .get()
+        ).data().count;
+      const trueMembers = await countRole('member');
+      const trueAdmins = await countRole('admin');
+      const patch: Record<string, number> = {};
+      if ((tenantDoc.data().activeMemberCount ?? 0) !== trueMembers) patch.activeMemberCount = trueMembers;
+      if ((tenantDoc.data().activeAdminCount ?? 0) !== trueAdmins) patch.activeAdminCount = trueAdmins;
+      if (Object.keys(patch).length > 0) {
+        await tenantDoc.ref.set(patch, { merge: true });
         fixed += 1;
-        console.log(`[reconcile] tenants/${tenantDoc.id}.activeMemberCount → ${trueCount}`);
+        console.log(`[reconcile] tenants/${tenantDoc.id} → ${JSON.stringify(patch)}`);
       }
     }
 

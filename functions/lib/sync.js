@@ -38,14 +38,19 @@ const firestore_1 = require("firebase-functions/v2/firestore");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = __importStar(require("firebase-admin"));
 /**
- * GymEntra: keeps `tenants/{id}.activeMemberCount` in step with reality.
+ * GymEntra: keeps two tallies on `tenants/{id}` in step with reality —
+ * `activeMemberCount` and `activeAdminCount`. Both exist for the same
+ * reason: a rule that needs to cap something cannot count documents, only
+ * read one, so the count is denormalised here and the rules read it back.
  *
- * The free-tier limit has to be enforceable on the server, but Firestore
- * rules cannot count documents — they can only read one. So the count is
- * denormalised here and the rules read it.
+ * One trigger rather than two identical ones on the same collection: every
+ * write to `tenant_memberships` already lands here, and a second listener
+ * would double the invocations to answer a second, unrelated question.
  *
- * Only the `member` role counts: trainers and admins are staff, and a gym
- * should never be pushed onto a paid plan by hiring a coach.
+ * `activeMemberCount` counts only the `member` role — trainers and admins
+ * are staff, and a gym should never be pushed onto a paid plan by hiring a
+ * coach. `activeAdminCount` counts `admin` regardless of what else the same
+ * person holds (an admin who also trains is still one of the three seats).
  */
 exports.syncActiveMemberCount = (0, firestore_1.onDocumentWritten)({ document: 'tenant_memberships/{membershipId}', region: 'europe-west1' }, async (event) => {
     var _a, _b, _c, _d, _e;
@@ -54,27 +59,42 @@ exports.syncActiveMemberCount = (0, firestore_1.onDocumentWritten)({ document: '
     const tenantId = ((_e = after === null || after === void 0 ? void 0 : after.tenantId) !== null && _e !== void 0 ? _e : before === null || before === void 0 ? void 0 : before.tenantId);
     if (!tenantId)
         return;
-    const countsAsMember = (d) => {
+    const hasActiveRole = (d, role) => {
         var _a;
         if (!d || d.status !== 'active')
             return false;
         const roles = (_a = d.roles) !== null && _a !== void 0 ? _a : (d.role ? [d.role] : []);
-        return roles.includes('member');
+        return roles.includes(role);
     };
-    // Nothing that affects the tally changed — skip the recount.
-    if (countsAsMember(before) === countsAsMember(after))
+    const memberChanged = hasActiveRole(before, 'member') !== hasActiveRole(after, 'member');
+    const adminChanged = hasActiveRole(before, 'admin') !== hasActiveRole(after, 'admin');
+    // Nothing that affects either tally changed — skip the recount.
+    if (!memberChanged && !adminChanged)
         return;
     const db = admin.firestore();
-    const snap = await db
-        .collection('tenant_memberships')
-        .where('tenantId', '==', tenantId)
-        .where('status', '==', 'active')
-        .where('roles', 'array-contains', 'member')
-        .count()
-        .get();
-    const activeMemberCount = snap.data().count;
-    await db.collection('tenants').doc(tenantId).set({ activeMemberCount }, { merge: true });
-    console.log(`Tenant ${tenantId} now has ${activeMemberCount} active member(s)`);
+    const patch = {};
+    if (memberChanged) {
+        const snap = await db
+            .collection('tenant_memberships')
+            .where('tenantId', '==', tenantId)
+            .where('status', '==', 'active')
+            .where('roles', 'array-contains', 'member')
+            .count()
+            .get();
+        patch.activeMemberCount = snap.data().count;
+    }
+    if (adminChanged) {
+        const snap = await db
+            .collection('tenant_memberships')
+            .where('tenantId', '==', tenantId)
+            .where('status', '==', 'active')
+            .where('roles', 'array-contains', 'admin')
+            .count()
+            .get();
+        patch.activeAdminCount = snap.data().count;
+    }
+    await db.collection('tenants').doc(tenantId).set(patch, { merge: true });
+    console.log(`Tenant ${tenantId}:`, JSON.stringify(patch));
 });
 /**
  * GymEntra (PKG-1): keeps `gym_packages.activeAssignmentCount` in sync with
