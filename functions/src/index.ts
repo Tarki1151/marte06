@@ -30,7 +30,10 @@ export {
   syncTenantNameToMemberships,
   reconcileMirrors,
 } from './sync';
-export { creditRollover, approvePackageChange, expirePendingPackageChangeRequests, cancelPackageAssignment, notifyExpiringPackages } from './packages';
+export { creditRollover, approvePackageChange, expirePendingPackageChangeRequests, cancelPackageAssignment, notifyExpiringPackages,
+  freezeMemberPackage,
+  sweepPackageStatuses,
+} from './packages';
 export { bookPtSessions, cancelPtSession } from './sessions';
 export { requestGuardian, respondToGuardian } from './guardians';
 export { revenueCatWebhook } from './subscriptions';
