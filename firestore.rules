@@ -722,6 +722,44 @@ service cloud.firestore {
      * `tenantId` and `memberId` are pinned to the doc id so a note cannot be
      * re-addressed to another person or gym by editing its fields.
      */
+    /**
+     * A member asking for a renewal (PER-15). The member opens it (one per
+     * person — the doc id pins it) and may withdraw it; staff read it; an
+     * admin may close it. The server closes it too when a package is
+     * assigned. Nothing else on it changes hands.
+     */
+    match /renewal_requests/{requestId} {
+      allow read: if isSignedIn() && (
+        resource.data.memberId == request.auth.uid ||
+        isTenantStaff(resource.data.tenantId)
+      );
+      allow create: if isSignedIn() &&
+        request.resource.data.memberId == request.auth.uid &&
+        isTenantMember(request.resource.data.tenantId) &&
+        requestId == request.resource.data.tenantId + '_' + request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        (!('note' in request.resource.data) || request.resource.data.note.size() <= 300);
+      allow update: if isSignedIn() && (
+        // member withdraws their own open request
+        (resource.data.memberId == request.auth.uid &&
+          resource.data.status == 'pending' &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']) &&
+          request.resource.data.status == 'withdrawn') ||
+        // member re-opens after a handled/withdrawn one (same doc, same id)
+        (resource.data.memberId == request.auth.uid &&
+          resource.data.status != 'pending' &&
+          request.resource.data.status == 'pending' &&
+          request.resource.data.memberId == resource.data.memberId &&
+          request.resource.data.tenantId == resource.data.tenantId) ||
+        // admin closes it
+        (isTenantAdmin(resource.data.tenantId) &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'handledAt', 'handledBy']) &&
+          request.resource.data.status == 'handled' &&
+          request.resource.data.handledBy == request.auth.uid)
+      );
+      allow delete: if false;
+    }
+
     match /member_notes/{noteId} {
       allow read: if isSignedIn() && isTenantStaff(resource.data.tenantId);
       allow create, update: if isSignedIn() &&

@@ -1211,6 +1211,52 @@ describe('Password reset throttling (PER-2)', () => {
   }
 });
 
+describe('Renewal requests (PER-15)', () => {
+  const id = `${TENANT}_member-1`;
+  const req = (over: Record<string, unknown> = {}) => ({
+    tenantId: TENANT, memberId: 'member-1', memberName: 'Üye Bir', status: 'pending', ...over,
+  });
+
+  test('a member opens a renewal request for themselves', async () => {
+    await seedMembership('member-1', 'member');
+    const db = testEnv.authenticatedContext('member-1').firestore();
+    await assertSucceeds(db.doc(`renewal_requests/${id}`).set(req()));
+    await assertSucceeds(db.doc(`renewal_requests/${id}`).get());
+  });
+
+  test('not for someone else, not under a foreign id', async () => {
+    await seedMembership('member-1', 'member');
+    const db = testEnv.authenticatedContext('member-1').firestore();
+    await assertFails(db.doc(`renewal_requests/${TENANT}_member-2`).set(req({ memberId: 'member-2' })));
+    await assertFails(db.doc('renewal_requests/free-id').set(req()));
+  });
+
+  test('the member can withdraw, then open again', async () => {
+    await seedMembership('member-1', 'member');
+    const db = testEnv.authenticatedContext('member-1').firestore();
+    await db.doc(`renewal_requests/${id}`).set(req());
+    await assertSucceeds(db.doc(`renewal_requests/${id}`).update({ status: 'withdrawn' }));
+    await assertSucceeds(db.doc(`renewal_requests/${id}`).set(req()));
+  });
+
+  test('staff read it; an admin closes it as handled; a trainer cannot', async () => {
+    await seedMembership('member-1', 'member');
+    await seedMembership('trainer-1', 'trainer');
+    await seedMembership('admin-1', 'admin');
+    await testEnv.authenticatedContext('member-1').firestore().doc(`renewal_requests/${id}`).set(req());
+    await assertSucceeds(testEnv.authenticatedContext('trainer-1').firestore().doc(`renewal_requests/${id}`).get());
+    await assertFails(testEnv.authenticatedContext('trainer-1').firestore().doc(`renewal_requests/${id}`).update({ status: 'handled', handledBy: 'trainer-1' }));
+    await assertSucceeds(testEnv.authenticatedContext('admin-1').firestore().doc(`renewal_requests/${id}`).update({ status: 'handled', handledBy: 'admin-1' }));
+  });
+
+  test('another member cannot read it', async () => {
+    await seedMembership('member-1', 'member');
+    await seedMembership('member-2', 'member');
+    await testEnv.authenticatedContext('member-1').firestore().doc(`renewal_requests/${id}`).set(req());
+    await assertFails(testEnv.authenticatedContext('member-2').firestore().doc(`renewal_requests/${id}`).get());
+  });
+});
+
 describe('Member notes (PER-14c)', () => {
   const note = (over: Record<string, unknown> = {}) => ({
     tenantId: TENANT, memberId: 'member-1', text: 'Sol diz — derin squat yok.', updatedBy: 'trainer-1', ...over,

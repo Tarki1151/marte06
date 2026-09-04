@@ -445,3 +445,59 @@ export const sendClassReminders = onSchedule(
     console.log(`sendClassReminders: ${sent} hatırlatma gönderildi`);
   },
 );
+
+/**
+ * PER-15: a member asked for their package to be renewed.
+ *
+ * The renewal conversation is the one the gym most wants to have; this is the
+ * member starting it. Fires on the transition INTO `pending` — a withdrawn
+ * request being re-opened counts as a new ask.
+ */
+export const notifyAdminsOnRenewalRequest = onDocumentWritten(
+  { document: 'renewal_requests/{requestId}', region: 'europe-west1' },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after || after.status !== 'pending' || before?.status === 'pending') return;
+    const who = (after.memberName as string) || 'Bir üye';
+    await notifyTenantAdmins(
+      after.tenantId as string,
+      'Yenileme talebi',
+      `${who} paketini yenilemek istiyor.${after.note ? ` "${String(after.note).slice(0, 80)}"` : ''}`,
+      { screen: 'admin/members' },
+      'packages',
+    );
+  },
+);
+
+/**
+ * PER-15: a new package assignment answers an open renewal request.
+ *
+ * Closed here rather than by an admin tap because the assignment IS the
+ * answer; asking the admin to also mark the request handled is a step that
+ * gets forgotten, and a stale "pending" line on the panel then says the
+ * opposite of what happened.
+ */
+export const resolveRenewalOnAssignment = onDocumentWritten(
+  { document: 'member_packages/{assignmentId}', region: 'europe-west1' },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (before || !after) return; // creates only
+    const ref = admin.firestore().doc(`renewal_requests/${after.tenantId}_${after.memberId}`);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()?.status !== 'pending') return;
+    await ref.update({
+      status: 'handled',
+      handledAt: admin.firestore.Timestamp.now(),
+      handledBy: (after.assignedBy as string) || 'system',
+    });
+    await sendPushToUser(
+      after.memberId as string,
+      'Paketin yenilendi',
+      `${after.packageName} paketin tanımlandı. Yenileme talebin kapatıldı.`,
+      { screen: 'member/index' },
+      'packages',
+    );
+  },
+);
