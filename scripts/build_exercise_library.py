@@ -366,12 +366,8 @@ add("barbell-row","Barbell row","Barbell row",["lat","trapMid","deltPost","bicep
 add("single-arm-row","Tek kol dumbbell row","Single-arm dumbbell row",["lat","trapMid","biceps"],["deltPost"],"BAŞLANGIÇ","Bank + dumbbell","Bench, dumbbell","standing_row_hinged",
     sets="3×10-12/kol",rest="60-90 sn",
     steps=[["Bir el ve diz bankta, sırt düz.","One hand and knee on the bench, flat back."],["Dumbbell'ı kalçaya doğru çek.","Row the dumbbell toward the hip."]])
-add("chest-supported-row","Chest-supported row","Chest-supported row",["lat","trapMid","deltPost"],["biceps"],"BAŞLANGIÇ","Eğimli bank + dumbbell","Incline bench, dumbbells","chest_supported_row",
-    sets="3×10-12",rest="75-90 sn",
-    steps=[["Göğüs eğimli banka yaslı — bel devre dışı.","Chest braced on the incline bench — no low-back strain."],["Dirsekleri gövdeye yakın çekerek kürek kemiklerini sık.","Row with elbows close to the body, squeeze shoulder blades."]])
-add("pullup","Barfiks","Pull-up",["lat","biceps","trapLower"],["deltPost","forearmFlex"],"İLERİ","Barfiks barı","Pull-up bar","pullup",
-    sets="3×max",rest="90-120 sn",
-    steps=[["Omuzlar aşağı-geri, çeneyi bara kadar çek.","Shoulders down and back, pull chin to the bar."],["Kontrollü in.","Lower with control."]])
+
+
 add("reverse-fly","Dumbbell reverse fly","Dumbbell reverse fly",["deltPost","trapMid"],["infra"],"BAŞLANGIÇ","Dumbbell","Dumbbells","hinged_fly",
     sets="3×12-15",rest="45-60 sn",
     steps=[["Öne eğil, kolları yana açarak kaldır.","Hinge forward, raise arms out to the sides."],["Kürek kemiklerini sıkarak üstte tut.","Squeeze shoulder blades at the top."]])
@@ -394,15 +390,11 @@ add("plank","Plank","Plank",["absMid","absUpper"],["oblique","gluteMax"],"BAŞLA
 add("side-plank","Side plank","Side plank",["oblique"],["gluteMed"],"BAŞLANGIÇ","Mat","Mat","side_plank",
     sets="3×20-30 sn/taraf",rest="30 sn",
     steps=[["Dirsek omuz altında, kalça, omuz, diz bir çizgide.","Elbow under shoulder, hip-shoulder-knee in one line."]])
-add("dead-bug","Ölü böcek","Dead bug",["absMid","absLower"],["oblique"],"BAŞLANGIÇ","Mat","Mat","floor_core_supine",
-    sets="3×8/taraf",rest="30-45 sn",
-    steps=[["Sırtüstü, kollar tavana, dizler 90°.","Lie on back, arms toward ceiling, knees at 90°."],["Karşı kol ve bacağı uzat, bel yere yapışık kalsın.","Extend opposite arm and leg, keep the low back flat."]])
+
 add("bird-dog","Bird-dog","Bird-dog",["erector","gluteMax"],["absMid"],"BAŞLANGIÇ","Mat","Mat","bird_dog",
     sets="3×6/taraf",rest="30-45 sn",
     steps=[["Emekleme pozisyonunda, karşı kol ve bacağı uzat.","On all fours, extend opposite arm and leg."],["Bel düz kalsın, 5 sn tut.","Keep the spine neutral, hold 5s."]])
-add("mcgill-curl-up","McGill curl-up","McGill curl-up",["absUpper"],[],"BAŞLANGIÇ","Mat","Mat","curl_up_supine",
-    sets="3×8",rest="30 sn",
-    steps=[["Eller belin altında, bir diz bükük.","Hands under the low back, one knee bent."],["Baş ve omuzları 2-3 cm kaldır, 8 sn tut.","Lift head and shoulders 2-3cm, hold 8s."]])
+
 add("pallof-press","Pallof pres","Pallof press",["oblique","absMid"],[],"ORTA","Kablo/bant","Cable or band","anti_rotation_standing",
     sets="3×12/taraf",rest="45 sn",
     steps=[["Kabloyu göğüs önünde tut, öne uzat.","Hold the cable at chest, press straight out."],["Gövde dönmesin.","Resist rotation."]])
@@ -439,7 +431,7 @@ ALIAS = {
  "Torasik açılma (yan yatarak kitap açma)": None,
  "Torasik açılma (foam roller üstünde)": None,
  "Scapular şınav / duvarda scapular kaydırma": None,
- "Dead hang (barda asılma)": "pullup",
+ "Dead hang (barda asılma)": None,
  "Yerinde hafif koşu / ip atlama": None,
  "Yerinde yürüyüş / hafif zıplama": None,
  "Bisiklet / kürek / yürüyüş bandı": None,
@@ -496,15 +488,15 @@ ALIAS = {
  "Barbell row": "barbell-row",
  "Barbell / kablo row": "barbell-row",
  "Tek kol dumbbell row": "single-arm-row",
- "Chest-supported dumbbell row": "chest-supported-row",
- "Kablo kürek (chest-supported row)": "chest-supported-row",
+ "Chest-supported dumbbell row": None,
+ "Kablo kürek (chest-supported row)": None,
  "Oturarak kürek": None,
  "Oturarak kürek (seated row)": None,
  "Lat pulldown": None,
  "Lat pulldown (geniş)": None,
  "Lat pulldown (nötr tutuş)": None,
  "Lat pulldown veya barfiks": None,
- "Weighted barfiks veya ağır lat pulldown": "pullup",
+ "Weighted barfiks veya ağır lat pulldown": None,
  "Yüz çekişi": None,
  "Yüz çekişi (face pull)": None,
  "Dumbbell reverse fly": "reverse-fly",
@@ -522,11 +514,11 @@ ALIAS = {
  "Side bridge (dizden)": "side-plank",
  "Side plank": "side-plank",
  "Side plank (ayaktan) + üst bacak kaldırma": "side-plank",
- "Ölü böcek": "dead-bug",
- "Ölü böcek (dead bug)": "dead-bug",
+ "Ölü böcek": None,
+ "Ölü böcek (dead bug)": None,
  "Bird-dog": "bird-dog",
  "Bird-dog (dirsek-diz temaslı)": "bird-dog",
- "McGill curl-up": "mcgill-curl-up",
+ "McGill curl-up": None,
  "Pallof pres": "pallof-press",
  "Ab wheel rollout (dizden)": "ab-wheel-rollout",
  "Asılı bacak kaldırma": "hanging-knee-raise",
@@ -623,7 +615,7 @@ for _n, _a in ARCH.items():
 
 # ---- Sanity checks, because eyeballing 34 archetypes missed things twice ----
 FLOOR = 207
-HANGING = {"pullup", "hanging_knee_raise"}
+HANGING = {"hanging_knee_raise"}
 def _dist(a, b): return ((a[0]-b[0])**2 + (a[1]-b[1])**2) ** 0.5
 _problems = []
 for name, arch in ARCH.items():

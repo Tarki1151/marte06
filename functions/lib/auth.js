@@ -37,6 +37,7 @@ exports.removeMemberFromTenant = exports.assignMembershipShortCode = exports.del
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
+const media_1 = require("./media");
 // Admin email list — used ONLY for the initial claim seeding.
 // After claims are set, this list is no longer the source of truth.
 const ADMIN_EMAILS = [
@@ -200,6 +201,9 @@ exports.deleteMyAccount = (0, https_1.onCall)({ region: 'europe-west1' }, async 
         await batch.commit();
     }
     // Auth record last: if anything above throws, the user can retry.
+    // The photo is the one thing the cascade above cannot reach — it lives
+    // in Storage, not Firestore. A deleted account leaves no face behind.
+    await (0, media_1.deleteMemberPhotoObject)(uid);
     await admin.auth().deleteUser(uid);
     console.log(`Account deleted: ${uid}`);
     return { deleted: true };
