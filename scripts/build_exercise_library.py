@@ -65,26 +65,30 @@ ARCH = {
   "A": dict(head=[150,46],shoulder=[150,70],elbow=[150,102],wrist=[152,138],hip=[152,136],knee=[152,172],ankle=[150,206],toe=[174,206],bar=[152,140]),
   "B": dict(head=[130,94],shoulder=[144,110],elbow=[150,142],wrist=[152,172],hip=[176,140],knee=[156,172],ankle=[150,206],toe=[174,206],bar=[152,174],arrow=[204,168,204,118]),
  },
- "hip_thrust": {  # shoulders on bench, hips drive up — supine, so the face looks up
+ "hip_thrust": {
+  "anchor": "ankle",  # shoulders on bench, hips drive up — supine, so the face looks up
   "face": "up",
   "A": dict(head=[70,150],shoulder=[92,152],elbow=[92,176],wrist=[92,196],hip=[132,180],knee=[168,180],ankle=[168,206],toe=[190,206],bar=[150,168],
             props=[{"x":56,"y":150,"w":16,"h":42}]),
   "B": dict(head=[70,150],shoulder=[92,150],elbow=[92,174],wrist=[92,194],hip=[132,140],knee=[168,168],ankle=[168,206],toe=[190,206],bar=[150,132],arrow=[150,168,150,140],
             props=[{"x":56,"y":150,"w":16,"h":42}]),
  },
- "bench_press": {  # designer original
+ "bench_press": {
+  "anchor": "shoulder",  # designer original
   "A": dict(head=[100,138],shoulder=[120,144],elbow=[120,116],wrist=[118,90],hip=[198,148],knee=[230,172],ankle=[230,204],toe=[248,204],bar=[118,90],arrow=[152,96,152,126],
             props=[{"x":70,"y":150,"w":180,"h":14,"r":5},{"x":88,"y":164,"w":12,"h":42},{"x":220,"y":164,"w":12,"h":42}]),
   "B": dict(head=[100,138],shoulder=[120,144],elbow=[138,120],wrist=[118,124],hip=[198,148],knee=[230,172],ankle=[230,204],toe=[248,204],bar=[118,124],
             props=[{"x":70,"y":150,"w":180,"h":14,"r":5},{"x":88,"y":164,"w":12,"h":42},{"x":220,"y":164,"w":12,"h":42}]),
  },
- "incline_press": {  # 30° bench
+ "incline_press": {
+  "anchor": "shoulder",  # 30° bench
   "A": dict(head=[86,120],shoulder=[108,132],elbow=[112,104],wrist=[110,78],hip=[176,158],knee=[214,178],ankle=[218,204],toe=[238,204],bar=[110,78],arrow=[146,86,146,116],
             props=[{"x":60,"y":90,"w":40,"h":110,"r":8},{"x":74,"y":160,"w":140,"h":14,"r":5},{"x":200,"y":174,"w":12,"h":34}]),
   "B": dict(head=[86,120],shoulder=[108,132],elbow=[128,108],wrist=[110,110],hip=[176,158],knee=[214,178],ankle=[218,204],toe=[238,204],bar=[110,110],
             props=[{"x":60,"y":90,"w":40,"h":110,"r":8},{"x":74,"y":160,"w":140,"h":14,"r":5},{"x":200,"y":174,"w":12,"h":34}]),
  },
- "seated_overhead_press": {  # overhead press reads from the front: both arms, symmetric
+ "seated_overhead_press": {
+  "anchor": "hip",  # overhead press reads from the front: both arms, symmetric
   "view": "front",
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[132,90],wrist=[130,64],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[172,206],bar=[130,64],arrow=[178,96,178,66],
             props=[{"x":140,"y":150,"w":22,"h":58,"r":6}]),
@@ -107,7 +111,8 @@ ARCH = {
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[124,96],wrist=[126,122],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[172,206],bar=[126,122],
             props=[{"x":140,"y":150,"w":22,"h":58,"r":6}]),
  },
- "pullup": {  # front view — both arms on the bar. dead hang → chin over bar. Knees tucked back so the feet are
+ "pullup": {
+  "anchor": "wrist",  # front view — both arms on the bar. dead hang → chin over bar. Knees tucked back so the feet are
              # visibly clear of the floor — a hanging figure standing on the
              # ground reads as someone holding a bar, not hanging from one.
   "view": "front",
@@ -144,22 +149,26 @@ ARCH = {
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[142,110],wrist=[144,136],hip=[150,150],knee=[150,182],ankle=[148,200],toe=[170,206]),
   "B": dict(head=[150,50],shoulder=[150,76],elbow=[142,102],wrist=[144,128],hip=[150,142],knee=[150,174],ankle=[148,192],toe=[168,198],arrow=[110,180,110,158]),
  },
- "plank_prone": {  # forearm plank
-  "A": dict(head=[262,150],shoulder=[228,152],elbow=[210,178],wrist=[210,198],hip=[150,150],knee=[90,150],ankle=[46,150],toe=[46,168]),
+ "plank_prone": {
+  "anchor": "hip",  # forearm plank
+  "A": dict(head=[262,144],shoulder=[230,152],elbow=[214,178],wrist=[212,204],hip=[168,164],knee=[132,174],ankle=[100,186],toe=[86,206]),
   "B": None,
  },
- "side_plank": {  # the viewer sees the front of the body — face toward the viewer
+ "side_plank": {
+  "anchor": "hip",  # the viewer sees the front of the body — face toward the viewer
   "face": "front",
-  "A": dict(head=[254,120],shoulder=[224,128],elbow=[210,158],wrist=[210,180],hip=[150,142],knee=[90,150],ankle=[46,156],toe=[46,174]),
+  "A": dict(head=[256,116],shoulder=[226,132],elbow=[214,166],wrist=[214,204],hip=[166,158],knee=[130,172],ankle=[98,188],toe=[84,206]),
   "B": None,
  },
- "floor_core_supine": {  # dead bug / curl-up / bird-dog-lite on back
-  "A": dict(head=[248,168],shoulder=[220,168],elbow=[200,146],wrist=[200,118],hip=[150,168],knee=[110,150],ankle=[80,168],toe=[60,168]),
-  "B": dict(head=[248,168],shoulder=[220,168],elbow=[236,148],wrist=[248,124],hip=[150,168],knee=[150,168],ankle=[176,180],toe=[196,182],arrow=[130,132,158,150],
+ "floor_core_supine": {
+  "anchor": "hip",  # dead bug / curl-up / bird-dog-lite on back
+  "A": dict(head=[248,194],shoulder=[220,194],elbow=[200,172],wrist=[200,144],hip=[150,194],knee=[126,162],ankle=[96,178],toe=[80,170]),
+  "B": dict(head=[248,194],shoulder=[220,194],elbow=[236,174],wrist=[248,150],hip=[150,194],knee=[112,192],ankle=[80,192],toe=[62,190],arrow=[128,164,96,182],
             # the other side stays tucked — dead bug is one side at a time
-            farKnee=[110,150],farAnkle=[80,168],farToe=[60,168],farElbow=[200,146],farWrist=[200,118]),
+            farKnee=[126,162],farAnkle=[96,178],farToe=[80,170],farElbow=[200,172],farWrist=[200,144]),
  },
- "bird_dog": {  # quadruped, opposite arm and leg extended
+ "bird_dog": {
+  "anchor": "hip",  # quadruped, opposite arm and leg extended
   "A": dict(head=[244,134],shoulder=[216,140],elbow=[216,172],wrist=[216,204],hip=[150,140],knee=[150,174],ankle=[150,204],toe=[132,206]),
   # The figure only has one arm and one leg drawn, so extending BOTH left it
   # touching nothing and reading as someone lying down. The supporting arm
@@ -168,7 +177,8 @@ ARCH = {
             # planted leg and the opposite arm reaching forward — both limbs the exercise is named for
             farKnee=[150,174],farAnkle=[150,204],farToe=[132,206],farElbow=[256,120],farWrist=[292,106]),
  },
- "quadruped_spine": {  # cat-cow — same setup, but the spine moves, not a limb.
+ "quadruped_spine": {
+  "anchor": "hip",  # cat-cow — same setup, but the spine moves, not a limb.
                        # It had been sharing bird-dog's frames, which showed a
                        # leg extending: the wrong movement entirely.
   "A": dict(head=[248,120],shoulder=[216,138],elbow=[216,172],wrist=[216,204],hip=[150,148],knee=[150,174],ankle=[150,204],toe=[132,206]),
@@ -206,9 +216,13 @@ ARCH = {
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[148,140]),
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[146,110],wrist=[130,86],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[130,86],arrow=[112,120,112,92]),
  },
- "rollout": {  # ab wheel — kneeling, roll out and back
-  "A": dict(head=[214,140],shoulder=[192,148],elbow=[178,168],wrist=[176,188],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196]),
-  "B": dict(head=[286,166],shoulder=[254,168],elbow=[228,178],wrist=[210,186],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196],arrow=[300,150,270,158]),
+ "rollout": {
+  "anchor": "hip",  # ab wheel — kneeling, roll out and back
+  # Knees and shins on the floor, the wheel on the floor. Segment lengths hold
+  # between the frames — the first version left the hip pinned while the
+  # shoulders travelled, and the torso stretched to two and a half times.
+  "A": dict(head=[204,116],shoulder=[180,132],elbow=[196,160],wrist=[204,194],hip=[128,170],knee=[110,204],ankle=[76,204],toe=[58,204],bar=[212,200]),
+  "B": dict(head=[236,166],shoulder=[208,178],elbow=[238,190],wrist=[262,200],hip=[146,192],knee=[110,204],ankle=[76,204],toe=[58,204],bar=[270,202],arrow=[230,150,260,166]),
  },
  "bulgarian_split_squat": {  # rear foot up on a bench behind; front leg does the work
   "A": dict(head=[142,50],shoulder=[144,74],elbow=[130,100],wrist=[134,124],hip=[146,138],knee=[150,174],ankle=[150,206],toe=[174,206],bar=[134,126],
@@ -216,12 +230,14 @@ ARCH = {
   "B": dict(head=[140,72],shoulder=[142,96],elbow=[128,122],wrist=[132,146],hip=[138,158],knee=[176,180],ankle=[168,206],toe=[192,206],bar=[132,148],
             farKnee=[96,194],farAnkle=[62,166],farToe=[44,168],arrow=[200,118,190,160],props=[{"x":28,"y":168,"w":44,"h":38,"r":4}]),
  },
- "glute_bridge": {  # on the floor: shoulders down, feet flat, hips drive up
+ "glute_bridge": {
+  "anchor": "ankle",  # on the floor: shoulders down, feet flat, hips drive up
   "face": "up",
-  "A": dict(head=[236,196],shoulder=[210,196],elbow=[212,204],wrist=[196,206],hip=[150,196],knee=[104,164],ankle=[86,206],toe=[66,206]),
-  "B": dict(head=[236,196],shoulder=[210,196],elbow=[212,204],wrist=[196,206],hip=[150,154],knee=[104,164],ankle=[86,206],toe=[66,206],arrow=[150,190,150,160]),
+  "A": dict(head=[236,194],shoulder=[210,194],elbow=[212,202],wrist=[196,204],hip=[150,194],knee=[110,168],ankle=[92,206],toe=[74,206]),
+  "B": dict(head=[236,194],shoulder=[210,194],elbow=[212,202],wrist=[196,204],hip=[140,158],knee=[110,168],ankle=[92,206],toe=[74,206],arrow=[148,190,142,162]),
  },
- "chest_supported_row": {  # chest on an incline bench, dumbbells hang then row to the ribs
+ "chest_supported_row": {
+  "anchor": "hip",  # chest on an incline bench, dumbbells hang then row to the ribs
   "A": dict(head=[236,86],shoulder=[210,104],elbow=[200,136],wrist=[196,168],hip=[150,140],knee=[130,176],ankle=[122,206],toe=[144,206],bar=[196,170],
             props=[{"x":128,"y":98,"w":100,"h":16,"r":6},{"x":150,"y":114,"w":12,"h":92}]),
   "B": dict(head=[236,86],shoulder=[210,104],elbow=[218,130],wrist=[210,112],hip=[150,140],knee=[130,176],ankle=[122,206],toe=[144,206],bar=[210,114],arrow=[176,160,190,124],
@@ -243,18 +259,21 @@ ARCH = {
  },
  "shrug_front": {  # only the shoulders travel — up toward the ears and back down
   "view": "front",
+  "loose": ["shoulder"],  # the shoulder girdle really does rise off the torso; do not pin it
   "A": dict(head=[150,52],shoulder=[150,82],elbow=[172,112],wrist=[176,140],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[176,142]),
   "B": dict(head=[150,52],shoulder=[150,72],elbow=[172,102],wrist=[176,130],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[176,132],arrow=[200,96,200,76]),
  },
- "hanging_knee_raise": {  # hang stays still; the knees fold up toward the chest
+ "hanging_knee_raise": {
+  "anchor": "wrist",  # hang stays still; the knees fold up toward the chest
   "view": "front",
   "A": dict(head=[150,66],shoulder=[150,92],elbow=[178,62],wrist=[186,34],hip=[150,150],knee=[158,182],ankle=[160,206],toe=[168,206],bar=[186,32]),
   "B": dict(head=[150,66],shoulder=[150,92],elbow=[178,62],wrist=[186,34],hip=[150,150],knee=[160,140],ankle=[162,166],toe=[166,178],bar=[186,32],arrow=[196,176,196,146]),
  },
- "curl_up_supine": {  # McGill: one knee bent, hands under the low back, head and shoulders lift a hand's width
+ "curl_up_supine": {
+  "anchor": "hip",  # McGill: one knee bent, hands under the low back, head and shoulders lift a hand's width
   "face": "up",
-  "A": dict(head=[248,170],shoulder=[220,170],elbow=[236,176],wrist=[214,178],hip=[150,170],knee=[110,150],ankle=[80,170],toe=[60,170]),
-  "B": dict(head=[244,156],shoulder=[218,160],elbow=[234,170],wrist=[214,176],hip=[150,170],knee=[110,150],ankle=[80,170],toe=[60,170],arrow=[262,182,258,158]),
+  "A": dict(head=[248,194],shoulder=[220,194],elbow=[232,200],wrist=[210,202],hip=[150,194],knee=[118,164],ankle=[90,194],toe=[72,194]),
+  "B": dict(head=[244,180],shoulder=[218,184],elbow=[232,196],wrist=[210,202],hip=[150,194],knee=[118,164],ankle=[90,194],toe=[72,194],arrow=[262,206,258,182]),
  },
  "band_pull_apart_front": {  # arms straight ahead, band pulled wide to the chest
   "view": "front",
@@ -551,6 +570,85 @@ if _bad:
 
 alias = ALIAS
 
+
+# ---- Normalization: segment lengths must not change between frames ----
+# Every frame is rebuilt as a kinematic chain from an anchored joint — the one
+# in contact with the world (ankle when standing, wrist when hanging, hip when
+# on the floor, shoulder when on a bench). Directions come from the frame as
+# authored; lengths come from frame A. Authoring by eye left torsos stretching
+# to 2.5x between frames; this makes that impossible rather than merely checked.
+FRONT_FORESHORTEN = 0.6  # front view: a limb reaching toward the viewer may project this short
+def _v(a, b): return (b[0]-a[0], b[1]-a[1])
+def _len(v): return (v[0]**2 + v[1]**2) ** 0.5
+def _place(frm, to, length, allow_short=1.0):
+    d = _v(frm, to); l = _len(d)
+    if l == 0: return [round(frm[0]), round(frm[1] + length)]
+    target = length if allow_short >= 1.0 else max(min(l, length), length * allow_short)
+    return [round(frm[0] + d[0]/l*target, 1), round(frm[1] + d[1]/l*target, 1)]
+CHAIN = {  # (child, parent) pairs, traversed from the anchor outward
+    "ankle": [("knee","ankle"),("hip","knee"),("shoulder","hip"),("head","shoulder"),("elbow","shoulder"),("wrist","elbow"),("toe","ankle")],
+    "hip":   [("knee","hip"),("ankle","knee"),("toe","ankle"),("shoulder","hip"),("head","shoulder"),("elbow","shoulder"),("wrist","elbow")],
+    "shoulder": [("hip","shoulder"),("knee","hip"),("ankle","knee"),("toe","ankle"),("head","shoulder"),("elbow","shoulder"),("wrist","elbow")],
+    "wrist": [("elbow","wrist"),("shoulder","elbow"),("hip","shoulder"),("knee","hip"),("ankle","knee"),("toe","ankle"),("head","shoulder")],
+}
+FAR_CHAIN = [("farKnee","hip","knee","hip"),("farAnkle","farKnee","ankle","knee"),("farToe","farAnkle","toe","ankle"),
+             ("farElbow","shoulder","elbow","shoulder"),("farWrist","farElbow","wrist","elbow")]
+def normalize(name, arch):
+    A = arch.get("A"); B = arch.get("B")
+    if not A: return 0
+    anchor = arch.get("anchor", "ankle")
+    front = arch.get("view") == "front"
+    ref = {c: _len(_v(A[p], A[c])) for c, p in CHAIN[anchor]}
+    loose = set(arch.get("loose", []))  # joints whose authored position is the truth (a shrug's shoulder)
+    moved = 0
+    for f in (A, B):
+        if not f: continue
+        old = {k: list(v) for k, v in f.items() if isinstance(v, list) and len(v) == 2 and all(isinstance(n, (int, float)) for n in v)}
+        for child, parent in CHAIN[anchor]:
+            if child in loose: continue
+            short = FRONT_FORESHORTEN if (front and child in ("elbow","wrist")) else 1.0
+            f[child] = _place(f[parent], f[child], ref[child], short)
+        for child, parent, refc, refp in FAR_CHAIN:
+            if child in f:
+                f[child] = _place(f[parent], f[child], _len(_v(A[refp], A[refc])))
+        if "bar" in f and _len(_v(old["wrist"], f["bar"])) < 40:
+            f["bar"] = [round(f["bar"][0] + f["wrist"][0] - old["wrist"][0], 1), round(f["bar"][1] + f["wrist"][1] - old["wrist"][1], 1)]
+        moved += sum(1 for k, v in old.items() if k in f and _len(_v(v, f[k])) > 6)
+    return moved
+_used_now = {e['archetype'] for e in EXO}
+for _n, _a in ARCH.items():
+    if _n in _used_now:
+        _m = normalize(_n, _a)
+        if _m: print(f"normalize {_n}: {_m} eklem >6 px kaydı")
+
+# ---- Sanity checks, because eyeballing 34 archetypes missed things twice ----
+FLOOR = 207
+HANGING = {"pullup", "hanging_knee_raise"}
+def _dist(a, b): return ((a[0]-b[0])**2 + (a[1]-b[1])**2) ** 0.5
+_problems = []
+for name, arch in ARCH.items():
+    if name not in _used_now: continue
+    frames = [f for f in (arch.get("A"), arch.get("B")) if f]
+    for tag, f in zip("AB", frames):
+        # Yer teması: asılı olmayan her figürün bir eklemi yere ya da bir
+        # prop'un üstüne (kutu, bench) değmeli — plank'ın ayakları 40 px havadaydı.
+        if name not in HANGING:
+            surfaces = [(0, 320, FLOOR)] + [(p["x"], p["x"]+p["w"], p["y"]) for p in f.get("props", [])]
+            touching = any(x0-6 <= f[k][0] <= x1+6 and abs(y - f[k][1]) <= 14
+                           for k in ("ankle","toe","knee","wrist","hip","shoulder") for x0, x1, y in surfaces)
+            if not touching:
+                _problems.append(f"{name}.{tag}: yer/prop teması yok")
+    if len(frames) == 2:
+        # Segment uzunluğu: gövde/uyluk/baldır/kol iki kare arasında aynı kalmalı
+        # (rollout'ta gövde 42'den 105 px'e uzuyordu).
+        for seg, (a, b) in {"gövde": ("shoulder", "hip"), "uyluk": ("hip", "knee"), "baldır": ("knee", "ankle"),
+                            "üst kol": ("shoulder", "elbow"), "ön kol": ("elbow", "wrist")}.items():
+            if a in arch.get("loose", []) or b in arch.get("loose", []): continue
+            la, lb = _dist(frames[0][a], frames[0][b]), _dist(frames[1][a], frames[1][b])
+            if la > 0 and lb > 0 and abs(la - lb) / max(la, lb) > 0.15:
+                _problems.append(f"{name}: {seg} A={la:.0f} B={lb:.0f} px (%{abs(la-lb)/max(la,lb)*100:.0f} fark)")
+if _problems:
+    print("DENETİM UYARILARI:\n  " + "\n  ".join(_problems))
 
 used_arch = sorted({e['archetype'] for e in EXO})
 unused = [a for a in ARCH if a not in used_arch]
