@@ -65,7 +65,8 @@ ARCH = {
   "A": dict(head=[150,46],shoulder=[150,70],elbow=[150,102],wrist=[152,138],hip=[152,136],knee=[152,172],ankle=[150,206],toe=[174,206],bar=[152,140]),
   "B": dict(head=[130,94],shoulder=[144,110],elbow=[150,142],wrist=[152,172],hip=[176,140],knee=[156,172],ankle=[150,206],toe=[174,206],bar=[152,174],arrow=[204,168,204,118]),
  },
- "hip_thrust": {  # shoulders on bench, hips drive up
+ "hip_thrust": {  # shoulders on bench, hips drive up — supine, so the face looks up
+  "face": "up",
   "A": dict(head=[70,150],shoulder=[92,152],elbow=[92,176],wrist=[92,196],hip=[132,180],knee=[168,180],ankle=[168,206],toe=[190,206],bar=[150,168],
             props=[{"x":56,"y":150,"w":16,"h":42}]),
   "B": dict(head=[70,150],shoulder=[92,150],elbow=[92,174],wrist=[92,194],hip=[132,140],knee=[168,168],ankle=[168,206],toe=[190,206],bar=[150,132],arrow=[150,168,150,140],
@@ -83,7 +84,8 @@ ARCH = {
   "B": dict(head=[86,120],shoulder=[108,132],elbow=[128,108],wrist=[110,110],hip=[176,158],knee=[214,178],ankle=[218,204],toe=[238,204],bar=[110,110],
             props=[{"x":60,"y":90,"w":40,"h":110,"r":8},{"x":74,"y":160,"w":140,"h":14,"r":5},{"x":200,"y":174,"w":12,"h":34}]),
  },
- "seated_overhead_press": {
+ "seated_overhead_press": {  # overhead press reads from the front: both arms, symmetric
+  "view": "front",
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[132,90],wrist=[130,64],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[172,206],bar=[130,64],arrow=[178,96,178,66],
             props=[{"x":140,"y":150,"w":22,"h":58,"r":6}]),
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[144,54],wrist=[150,28],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[172,206],bar=[150,28],
@@ -105,11 +107,12 @@ ARCH = {
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[124,96],wrist=[126,122],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[172,206],bar=[126,122],
             props=[{"x":140,"y":150,"w":22,"h":58,"r":6}]),
  },
- "pullup": {  # dead hang → chin over bar. Knees tucked back so the feet are
+ "pullup": {  # front view — both arms on the bar. dead hang → chin over bar. Knees tucked back so the feet are
              # visibly clear of the floor — a hanging figure standing on the
              # ground reads as someone holding a bar, not hanging from one.
-  "A": dict(head=[152,74],shoulder=[150,100],elbow=[138,68],wrist=[126,36],hip=[150,160],knee=[148,186],ankle=[176,176],toe=[192,172],bar=[126,34]),
-  "B": dict(head=[152,52],shoulder=[150,78],elbow=[140,58],wrist=[126,36],hip=[150,138],knee=[148,164],ankle=[176,154],toe=[192,150],bar=[126,34],arrow=[196,110,196,84]),
+  "view": "front",
+  "A": dict(head=[150,74],shoulder=[150,100],elbow=[176,70],wrist=[186,36],hip=[150,160],knee=[158,190],ankle=[160,206],toe=[168,206],bar=[186,34]),
+  "B": dict(head=[150,52],shoulder=[150,78],elbow=[178,66],wrist=[186,36],hip=[150,138],knee=[158,168],ankle=[160,184],toe=[168,184],bar=[186,34],arrow=[210,110,210,84]),
  },
  "unilateral_lunge": {  # front leg loaded, rear leg trailing
   "A": dict(head=[150,46],shoulder=[150,70],elbow=[136,96],wrist=[140,120],hip=[152,134],knee=[152,172],ankle=[150,206],toe=[174,206],bar=[140,122]),
@@ -145,7 +148,8 @@ ARCH = {
   "A": dict(head=[262,150],shoulder=[228,152],elbow=[210,178],wrist=[210,198],hip=[150,150],knee=[90,150],ankle=[46,150],toe=[46,168]),
   "B": None,
  },
- "side_plank": {
+ "side_plank": {  # the viewer sees the front of the body — face toward the viewer
+  "face": "front",
   "A": dict(head=[254,120],shoulder=[224,128],elbow=[210,158],wrist=[210,180],hip=[150,142],knee=[90,150],ankle=[46,156],toe=[46,174]),
   "B": None,
  },
@@ -206,6 +210,45 @@ ARCH = {
   "A": dict(head=[214,140],shoulder=[192,148],elbow=[178,168],wrist=[176,188],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196]),
   "B": dict(head=[286,166],shoulder=[254,168],elbow=[228,178],wrist=[210,186],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196],arrow=[300,150,270,158]),
  },
+ "chin_tuck_side": {  # head-only: the jaw glides straight back, the neck lengthens; nothing else moves
+  "A": dict(head=[160,60],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206]),
+  "B": dict(head=[146,58],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],arrow=[188,60,166,60]),
+ },
+ "arm_circles_front": {  # both arms sweep from the sides up overhead
+  "view": "front",
+  "A": dict(head=[150,52],shoulder=[150,78],elbow=[176,102],wrist=[194,126],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206]),
+  "B": dict(head=[150,52],shoulder=[150,78],elbow=[182,62],wrist=[196,34],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],arrow=[214,110,214,60]),
+ },
+ "lateral_raise_front": {  # dumbbells rise out to the side, to shoulder height, elbows soft
+  "view": "front",
+  "A": dict(head=[150,52],shoulder=[150,78],elbow=[170,106],wrist=[176,132],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[176,134]),
+  "B": dict(head=[150,52],shoulder=[150,78],elbow=[186,84],wrist=[214,80],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[214,80],arrow=[204,126,214,94]),
+ },
+ "shrug_front": {  # only the shoulders travel — up toward the ears and back down
+  "view": "front",
+  "A": dict(head=[150,52],shoulder=[150,82],elbow=[172,112],wrist=[176,140],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[176,142]),
+  "B": dict(head=[150,52],shoulder=[150,72],elbow=[172,102],wrist=[176,130],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[176,132],arrow=[200,96,200,76]),
+ },
+ "hanging_knee_raise": {  # hang stays still; the knees fold up toward the chest
+  "view": "front",
+  "A": dict(head=[150,66],shoulder=[150,92],elbow=[178,62],wrist=[186,34],hip=[150,150],knee=[158,182],ankle=[160,206],toe=[168,206],bar=[186,32]),
+  "B": dict(head=[150,66],shoulder=[150,92],elbow=[178,62],wrist=[186,34],hip=[150,150],knee=[160,140],ankle=[162,166],toe=[166,178],bar=[186,32],arrow=[196,176,196,146]),
+ },
+ "curl_up_supine": {  # McGill: one knee bent, hands under the low back, head and shoulders lift a hand's width
+  "face": "up",
+  "A": dict(head=[248,170],shoulder=[220,170],elbow=[236,176],wrist=[214,178],hip=[150,170],knee=[110,150],ankle=[80,170],toe=[60,170]),
+  "B": dict(head=[244,156],shoulder=[218,160],elbow=[234,170],wrist=[214,176],hip=[150,170],knee=[110,150],ankle=[80,170],toe=[60,170],arrow=[262,182,258,158]),
+ },
+ "band_pull_apart_front": {  # arms straight ahead, band pulled wide to the chest
+  "view": "front",
+  "A": dict(head=[150,52],shoulder=[150,78],elbow=[164,82],wrist=[168,86],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[168,86]),
+  "B": dict(head=[150,52],shoulder=[150,78],elbow=[186,82],wrist=[220,82],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[220,82],arrow=[182,104,214,104]),
+ },
+ "band_ext_rotation_front": {  # elbow pinned at the side, forearm swings out from the belly
+  "view": "front",
+  "A": dict(head=[150,52],shoulder=[150,78],elbow=[170,112],wrist=[148,116],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[148,116]),
+  "B": dict(head=[150,52],shoulder=[150,78],elbow=[170,112],wrist=[198,110],hip=[150,146],knee=[158,178],ankle=[160,206],toe=[168,206],bar=[198,110],arrow=[160,130,196,128]),
+ },
  "mobility_generic": {  # arm circles / band pull-apart / chin tuck / face-pull-band — small ROM, standing
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[122,96],wrist=[98,96],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[98,96]),
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[178,96],wrist=[202,96],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[202,96],arrow=[130,60,170,60]),
@@ -221,15 +264,15 @@ EXO = []
 def add(*a, **k): EXO.append(pattern(*a, **k))
 
 # ---- ISINMA / MOBILITY (6) ----
-add("arm-circles","Kol çevirme","Arm circles",[],[],"BAŞLANGIÇ","Yok","None","mobility_bodyweight",
+add("arm-circles","Kol çevirme","Arm circles",[],[],"BAŞLANGIÇ","Yok","None","arm_circles_front",
     steps=[["Kolları yana aç, küçük daireler çiz, gitgide büyüt.","Extend arms out, small circles growing larger."]])
 add("cat-cow","Kedi-deve","Cat-cow",["erector"],["absMid"],"BAŞLANGIÇ","Mat","Mat","quadruped_spine",
     steps=[["Emekleme pozisyonunda, nefes verirken sırtı yuvarla, nefes alırken kavis ver.","On all fours, round the spine on exhale, arch on inhale."]])
-add("band-pull-apart","Bant pull-apart","Band pull-apart",["deltPost","trapMid"],["infra"],"BAŞLANGIÇ","Direnç bandı","Resistance band","mobility_generic",
+add("band-pull-apart","Bant pull-apart","Band pull-apart",["deltPost","trapMid"],["infra"],"BAŞLANGIÇ","Direnç bandı","Resistance band","band_pull_apart_front",
     steps=[["Bandı iki elle omuz genişliğinde tut, kürek kemiklerini sıkarak yanlara çek.","Hold band shoulder-width, pull apart squeezing shoulder blades."]])
-add("band-external-rotation","Bant ile dış rotasyon","Band external rotation",["infra","teres"],["deltPost"],"BAŞLANGIÇ","Direnç bandı","Resistance band","mobility_generic",
+add("band-external-rotation","Bant ile dış rotasyon","Band external rotation",["infra","teres"],["deltPost"],"BAŞLANGIÇ","Direnç bandı","Resistance band","band_ext_rotation_front",
     steps=[["Dirsek gövdeye yapışık 90°, ön kolu dışarı döndür.","Elbow pinned to side at 90°, rotate forearm outward."]])
-add("chin-tuck","Çene içeri çekme","Chin tuck",["sterno"],[],"BAŞLANGIÇ","Yok","None","mobility_bodyweight",
+add("chin-tuck","Çene içeri çekme","Chin tuck",["sterno"],[],"BAŞLANGIÇ","Yok","None","chin_tuck_side",
     steps=[["Başı geriye kaydır, 5 sn tut, çeneyi kaldırma.","Glide head straight back, hold 5s, don't lift the chin."]])
 add("worlds-greatest-stretch","Lunge + gövde rotasyonu","World's greatest stretch",["adductors","oblique"],["gluteMax"],"BAŞLANGIÇ","Yok","None","unilateral_lunge",
     steps=[["Uzun adımla çök, ön diz 90°, göğsü o taraf dizin üstüne döndürerek aç.","Long-step lunge, front knee 90°, rotate chest open over the front knee."]])
@@ -298,13 +341,13 @@ add("reverse-fly","Dumbbell reverse fly","Dumbbell reverse fly",["deltPost","tra
     steps=[["Öne eğil, kolları yana açarak kaldır.","Hinge forward, raise arms out to the sides."],["Kürek kemiklerini sıkarak üstte tut.","Squeeze shoulder blades at the top."]])
 
 # ---- İZOLASYON KOL / OMUZ (4) ----
-add("lateral-raise","Lateral raise","Lateral raise",["deltFront"],["deltPost"],"BAŞLANGIÇ","Dumbbell","Dumbbells","standing_arm_isolation",
+add("lateral-raise","Lateral raise","Lateral raise",["deltFront"],["deltPost"],"BAŞLANGIÇ","Dumbbell","Dumbbells","lateral_raise_front",
     sets="3×12-15",rest="45-60 sn",
     steps=[["Kolları omuz hizasına kadar yana kaldır.","Raise arms out to shoulder height."],["Kontrollü indir.","Lower with control."]])
 add("biceps-curl","Biceps curl","Biceps curl",["biceps","brachialis"],["forearmFlex"],"BAŞLANGIÇ","Dumbbell/bar","Dumbbells or barbell","standing_arm_isolation",
     sets="3×12",rest="45-60 sn",
     steps=[["Dirsekleri gövdeye sabitle, ağırlığı kaldır.","Pin elbows to the sides, curl the weight up."]])
-add("shrug","Omuz silkme","Shrug",["trapUpper"],[],"BAŞLANGIÇ","Dumbbell/bar","Dumbbells or barbell","standing_arm_isolation",
+add("shrug","Omuz silkme","Shrug",["trapUpper"],[],"BAŞLANGIÇ","Dumbbell/bar","Dumbbells or barbell","shrug_front",
     sets="3×12",rest="45-60 sn",
     steps=[["Omuzları kulağa doğru kaldır, 1 sn tut.","Shrug shoulders toward the ears, hold 1s."]])
 
@@ -321,7 +364,7 @@ add("dead-bug","Ölü böcek","Dead bug",["absMid","absLower"],["oblique"],"BAŞ
 add("bird-dog","Bird-dog","Bird-dog",["erector","gluteMax"],["absMid"],"BAŞLANGIÇ","Mat","Mat","bird_dog",
     sets="3×6/taraf",rest="30-45 sn",
     steps=[["Emekleme pozisyonunda, karşı kol ve bacağı uzat.","On all fours, extend opposite arm and leg."],["Bel düz kalsın, 5 sn tut.","Keep the spine neutral, hold 5s."]])
-add("mcgill-curl-up","McGill curl-up","McGill curl-up",["absUpper"],[],"BAŞLANGIÇ","Mat","Mat","floor_core_supine",
+add("mcgill-curl-up","McGill curl-up","McGill curl-up",["absUpper"],[],"BAŞLANGIÇ","Mat","Mat","curl_up_supine",
     sets="3×8",rest="30 sn",
     steps=[["Eller belin altında, bir diz bükük.","Hands under the low back, one knee bent."],["Baş ve omuzları 2-3 cm kaldır, 8 sn tut.","Lift head and shoulders 2-3cm, hold 8s."]])
 add("pallof-press","Pallof pres","Pallof press",["oblique","absMid"],[],"ORTA","Kablo/bant","Cable or band","anti_rotation_standing",
@@ -330,7 +373,7 @@ add("pallof-press","Pallof pres","Pallof press",["oblique","absMid"],[],"ORTA","
 add("ab-wheel-rollout","Ab wheel rollout","Ab wheel rollout",["absMid","absUpper"],["lat"],"ORTA","Ab wheel","Ab wheel","rollout",
     sets="3×8",rest="60 sn",
     steps=[["Dizden başla, bel çökmeden ileri yuvarla.","Start kneeling, roll forward without the low back sagging."],["Kalçayı sıkarak geri çek.","Squeeze glutes to pull back."]])
-add("hanging-knee-raise","Asılı diz çekme","Hanging knee raise",["absLower","absMid"],["forearmFlex"],"ORTA","Barfiks barı","Pull-up bar","pullup",
+add("hanging-knee-raise","Asılı diz çekme","Hanging knee raise",["absLower","absMid"],["forearmFlex"],"ORTA","Barfiks barı","Pull-up bar","hanging_knee_raise",
     sets="3×10-12",rest="45-60 sn",
     steps=[["Barda asıl, sallanmadan dizleri göğse çek.","Hang from the bar, raise knees to chest without swinging."]])
 add("suitcase-carry","Suitcase carry","Suitcase carry",["oblique","absMid"],["forearmFlex","trapUpper"],"BAŞLANGIÇ","Kettlebell/dumbbell","Kettlebell or dumbbell","carry",
@@ -583,10 +626,23 @@ A("""export interface PoseFrame {
   props?: { x: number; y: number; w: number; h: number; r?: number }[];
 }
 
-/** Start/end frames. `end: null` means an isometric hold — one frame only. */
+/** Which way the head looks when the toes cannot say (lying, quadruped, side plank). */
+export type PoseFace = 'left' | 'right' | 'up' | 'down' | 'front';
+
+/**
+ * Start/end frames. `end: null` means an isometric hold — one frame only.
+ *
+ * `view: 'front'` draws the same joints mirrored across the body's centre
+ * line — both arms, both legs, symmetric — for moves that only read from the
+ * front (a lateral raise seen from the side is a forward raise). `face`
+ * overrides the derived facing for the few frames where nothing in the
+ * skeleton says which way the eyes point.
+ */
 export interface PoseArchetype {
   start: PoseFrame;
   end: PoseFrame | null;
+  view?: 'side' | 'front';
+  face?: PoseFace;
 }
 """)
 A("export const POSE_ARCHETYPES: Record<string, PoseArchetype> = {")
@@ -594,6 +650,10 @@ for k, v in ARCH.items():
     A(f"  {k}: {{")
     A(f"    start: {joints(v['A'])},")
     A(f"    end: {joints(v['B'])},")
+    if v.get('view'):
+        A(f"    view: {js(v['view'])},")
+    if v.get('face'):
+        A(f"    face: {js(v['face'])},")
     A("  },")
 A("};\n")
 
