@@ -107,13 +107,13 @@ const MEMBER_PLAN = [
 
 // exerciseLibrary.ts'teki Türkçe adlar — anlatım ekranı bu isimden çözüyor.
 const PROGRAM_TEMPLATES = [
-  { name: 'Tam Vücut Başlangıç', ex: [['Goblet squat',3,12,20],['Göğüs pres (makine)',3,12,30],['Lat pulldown',3,12,35],['Kalça köprüsü',3,15,0],['Plank',3,1,0]] },
+  { name: 'Tam Vücut Başlangıç', ex: [['Goblet squat',3,12,20],['Bench press',3,10,40],['Tek kol dumbbell row',3,12,18],['Kalça köprüsü',3,15,0],['Plank',3,1,0]] },
   { name: 'Üst Vücut Kuvvet',    ex: [['Bench press',4,6,60],['Barbell row',4,8,50],['Omuz pres',3,8,32],['Barfiks',3,6,0],['Triceps pushdown',3,12,25]] },
-  { name: 'Alt Vücut Kuvvet',    ex: [['Back squat',4,6,80],['Romanian deadlift',3,8,70],['Leg press',3,12,120],['Leg curl',3,12,35],['Calf raise',4,15,40]] },
+  { name: 'Alt Vücut Kuvvet',    ex: [['Back squat',4,6,80],['Romanian deadlift',3,8,70],['Bulgarian split squat',3,10,12],['Leg curl',3,12,35],['Calf raise',4,15,40]] },
   { name: 'Core ve Duruş',       ex: [['Ölü böcek',3,10,0],['Bird-dog',3,10,0],['Side plank',3,1,0],['Pallof pres',3,12,15],['Yüz çekişi',3,15,20]] },
   { name: 'Yağ Yakım Devresi',   ex: [['Walking lunge',3,20,10],['Step-up',3,12,8],['Hip thrust',3,12,50],['Suitcase carry',3,1,24],['McGill curl-up',3,8,0]] },
   { name: 'Sırt ve Omuz',        ex: [['Chest-supported row',4,10,40],['Tek kol dumbbell row',3,10,26],['Dumbbell reverse fly',3,15,8],['Lateral raise',3,15,7],['Omuz silkme',3,12,45]] },
-  { name: 'Kol Odaklı',          ex: [['Biceps curl',4,10,14],['Triceps pushdown',4,12,28],['Incline dumbbell pres',3,10,22],['Barfiks',3,8,0]] },
+  { name: 'Kol Odaklı',          ex: [['Biceps curl',4,10,14],['Lateral raise',3,15,8],['Incline dumbbell pres',3,10,22],['Barfiks',3,8,0]] },
   { name: 'Isınma ve Mobilite',  ex: [['Kol çevirme',2,15,0],['Kedi-deve',2,10,0],['Bant pull-apart',3,15,0],['Lunge + gövde rotasyonu',2,8,0],['Çene içeri çekme',2,10,0]] },
 ];
 

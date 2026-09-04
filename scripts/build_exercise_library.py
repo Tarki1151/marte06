@@ -113,13 +113,16 @@ ARCH = {
  },
  "unilateral_lunge": {  # front leg loaded, rear leg trailing
   "A": dict(head=[150,46],shoulder=[150,70],elbow=[136,96],wrist=[140,120],hip=[152,134],knee=[152,172],ankle=[150,206],toe=[174,206],bar=[140,122]),
+  # Rear leg is a real limb now (farKnee/farAnkle/farToe) — it used to be a
+  # rectangle "prop" standing in for the trailing knee.
   "B": dict(head=[144,70],shoulder=[146,94],elbow=[132,118],wrist=[136,142],hip=[142,152],knee=[176,178],ankle=[176,206],toe=[198,206],bar=[136,144],
-            props=[{"x":96,"y":180,"w":14,"h":26,"r":5}]),
+            farKnee=[104,186],farAnkle=[84,196],farToe=[102,206]),
  },
  "step_up": {  # stepping onto a box
   "A": dict(head=[110,66],shoulder=[112,90],elbow=[100,116],wrist=[104,140],hip=[114,150],knee=[114,182],ankle=[114,206],toe=[136,206],bar=[104,142],
             props=[{"x":150,"y":174,"w":70,"h":32,"r":4}]),
   "B": dict(head=[176,52],shoulder=[178,76],elbow=[166,102],wrist=[170,126],hip=[180,136],knee=[188,166],ankle=[188,174],toe=[210,174],bar=[170,128],
+            farKnee=[152,178],farAnkle=[132,206],farToe=[154,206],
             props=[{"x":150,"y":174,"w":70,"h":32,"r":4}]),
  },
  "leg_press": {  # seated machine, legs push a sled
@@ -148,14 +151,18 @@ ARCH = {
  },
  "floor_core_supine": {  # dead bug / curl-up / bird-dog-lite on back
   "A": dict(head=[248,168],shoulder=[220,168],elbow=[200,146],wrist=[200,118],hip=[150,168],knee=[110,150],ankle=[80,168],toe=[60,168]),
-  "B": dict(head=[248,168],shoulder=[220,168],elbow=[236,148],wrist=[248,124],hip=[150,168],knee=[150,168],ankle=[176,180],toe=[196,182],arrow=[130,132,158,150]),
+  "B": dict(head=[248,168],shoulder=[220,168],elbow=[236,148],wrist=[248,124],hip=[150,168],knee=[150,168],ankle=[176,180],toe=[196,182],arrow=[130,132,158,150],
+            # the other side stays tucked — dead bug is one side at a time
+            farKnee=[110,150],farAnkle=[80,168],farToe=[60,168],farElbow=[200,146],farWrist=[200,118]),
  },
  "bird_dog": {  # quadruped, opposite arm and leg extended
   "A": dict(head=[244,134],shoulder=[216,140],elbow=[216,172],wrist=[216,204],hip=[150,140],knee=[150,174],ankle=[150,204],toe=[132,206]),
   # The figure only has one arm and one leg drawn, so extending BOTH left it
   # touching nothing and reading as someone lying down. The supporting arm
   # stays planted; the leg is the limb that visibly extends.
-  "B": dict(head=[248,128],shoulder=[218,138],elbow=[218,170],wrist=[218,204],hip=[150,140],knee=[104,130],ankle=[68,122],toe=[52,120],arrow=[92,152,64,136]),
+  "B": dict(head=[248,128],shoulder=[218,138],elbow=[218,170],wrist=[218,204],hip=[150,140],knee=[104,130],ankle=[68,122],toe=[52,120],arrow=[92,152,64,136],
+            # planted leg and the opposite arm reaching forward — both limbs the exercise is named for
+            farKnee=[150,174],farAnkle=[150,204],farToe=[132,206],farElbow=[256,120],farWrist=[292,106]),
  },
  "quadruped_spine": {  # cat-cow — same setup, but the spine moves, not a limb.
                        # It had been sharing bird-dog's frames, which showed a
@@ -186,8 +193,10 @@ ARCH = {
   "B": dict(head=[150,58],shoulder=[150,84],elbow=[150,96],wrist=[178,96],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[178,96]),
  },
  "carry": {  # farmer/suitcase carry — walking, weight at side
-  "A": dict(head=[120,58],shoulder=[120,84],elbow=[110,110],wrist=[108,140],hip=[120,150],knee=[110,182],ankle=[104,206],toe=[126,206],bar=[108,142]),
-  "B": dict(head=[190,58],shoulder=[190,84],elbow=[180,110],wrist=[178,140],hip=[190,150],knee=[204,182],ankle=[210,206],toe=[232,206],bar=[178,142],arrow=[150,60,180,60]),
+  "A": dict(head=[120,58],shoulder=[120,84],elbow=[110,110],wrist=[108,140],hip=[120,150],knee=[110,182],ankle=[104,206],toe=[126,206],bar=[108,142],
+            farKnee=[132,182],farAnkle=[140,206],farToe=[162,206]),
+  "B": dict(head=[190,58],shoulder=[190,84],elbow=[180,110],wrist=[178,140],hip=[190,150],knee=[204,182],ankle=[210,206],toe=[232,206],bar=[178,142],arrow=[150,60,180,60],
+            farKnee=[178,182],farAnkle=[170,206],farToe=[192,206]),
  },
  "standing_arm_isolation": {  # curl / lateral raise / triceps pushdown / shrug / ext-rotation share this rig
   "A": dict(head=[150,58],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],bar=[148,140]),
@@ -232,12 +241,9 @@ add("goblet-squat","Goblet squat","Goblet squat",["quadRF","quadVL","quadVM","gl
 add("back-squat","Back squat","Barbell back squat",["quadRF","quadVL","quadVM","gluteMax","erector","adductors"],["hamBF","hamST","gastroMed","absMid","trapUpper"],"ORTA-İLERİ","Squat rack + Bar","Squat rack, barbell","squat",
     sets="4×5-8",rest="120-180 sn",
     steps=[["Barı üst trapezin üstüne yerleştir.","Rack the bar on the upper traps."],["Kalçayı geriye-aşağı götürerek in, uyluk en az paralel.","Sit back and down until thighs are at least parallel."],["Topuklardan iterek kalk, dizler içe düşmesin.","Drive through the heels, knees track out."]])
-add("front-hack-squat","Front squat / Hack squat","Front squat or hack squat",["quadRF","quadVL","quadVM"],["gluteMax","adductors","absMid"],"ORTA","Squat rack veya makine","Rack or machine","squat_goblet",
+add("front-hack-squat","Front squat","Front squat",["quadRF","quadVL","quadVM"],["gluteMax","adductors","absMid"],"ORTA","Squat rack","Squat rack","squat_goblet",
     sets="3×8-10",rest="90-120 sn",
     steps=[["Bar ön omuzlarda ya da makinede sırt sabit.","Bar racked on front shoulders, or back braced on the machine."],["Diklemesine in, göğüs yukarıda kalsın.","Descend vertically, chest stays up."]])
-add("leg-press","Leg press","Leg press",["quadRF","quadVL","quadVM","gluteMax"],["hamBF","hamST"],"BAŞLANGIÇ","Leg press makinesi","Leg press machine","leg_press",
-    sets="3×10-12",rest="75-90 sn",
-    steps=[["Ayaklar omuz genişliği, sırt sedyeye yaslı.","Feet shoulder-width, back flat against the pad."],["Dizleri göğse yaklaştır, sonra topuklardan it.","Lower knees toward chest, then drive through the heels."]])
 add("rdl","Romanian deadlift","Romanian deadlift",["hamBF","hamST","gluteMax","erector"],["addMagnus","forearmFlex"],"ORTA","Bar veya dumbbell","Barbell or dumbbell","hip_hinge_dumbbell",
     sets="3×8-10",rest="90-120 sn",
     steps=[["Kalçayı geriye it, bar/dumbbell bacağa yakın kalsın.","Push hips back, keep the weight close to the legs."],["Hamstring gerginliğini hissedince kalçayı öne sıkarak kalk.","Feel the hamstring stretch, then drive hips forward to stand."]])
@@ -259,12 +265,6 @@ add("reverse-lunge","Reverse lunge","Reverse lunge",["quadRF","gluteMax"],["addu
 add("step-up","Step-up","Step-up",["quadRF","gluteMax"],["hamBF"],"BAŞLANGIÇ","Kutu/bench","Box or bench","step_up",
     sets="3×10/bacak",rest="60-90 sn",
     steps=[["Bir ayağı kutuya koy, o bacakla it.","Place one foot on the box, drive through that leg."],["Üstte dikleş, kontrollü in.","Stand tall at the top, step down with control."]])
-add("leg-extension","Leg extension","Leg extension",["quadRF","quadVL","quadVM"],[],"BAŞLANGIÇ","Makine","Machine","leg_extension_curl",
-    sets="3×12",rest="60-75 sn",
-    steps=[["Diz makinenin dönüş noktasıyla hizalı.","Knee aligned with the machine's pivot."],["Bacakları uzat, üstte 1 sn sık.","Extend the legs, squeeze 1s at the top."]])
-add("leg-curl","Leg curl","Leg curl",["hamBF","hamST"],["gastroMed"],"BAŞLANGIÇ","Makine","Machine","leg_curl_prone",
-    sets="3×12",rest="60-75 sn",
-    steps=[["Dizi bük, topuğu kalçaya yaklaştır.","Flex the knee, bring the heel toward the glutes."]])
 add("calf-raise","Calf raise","Calf raise",["gastroLat","gastroMed","soleus"],[],"BAŞLANGIÇ","Yok / makine","Bodyweight or machine","calf_raise",
     sets="3×15",rest="45-60 sn",
     steps=[["Topuğu tam indir, sonra parmak ucunda yüksel.","Lower the heel fully, then rise onto the toes."],["Üstte 1 sn tut.","Hold 1s at the top."]])
@@ -276,9 +276,6 @@ add("bench-press","Bench press","Barbell bench press",["pecSternal","pecClav","d
 add("incline-press","Incline dumbbell pres","Incline dumbbell press",["pecClav","deltFront","triLat"],["serratus"],"ORTA","Bank (30°) + dumbbell","Incline bench, dumbbells","incline_press",
     sets="3×10-12",rest="75-90 sn",
     steps=[["Bank 30°, dumbbell'lar göğüs hizasında.","Bench at 30°, dumbbells at chest height."],["Yukarı it, tam kilitleme yapma.","Press up without fully locking the elbows."]])
-add("machine-chest-press","Göğüs pres (makine)","Machine chest press",["pecSternal","deltFront","triLat"],["serratus"],"BAŞLANGIÇ","Makine","Machine","bench_press",
-    sets="3×10-12",rest="75-90 sn",
-    steps=[["Kollar tutamağa, dirsekler bilek altında.","Grip handles, elbows under wrists."],["İterek kilitle, kontrollü geri getir.","Press to lockout, return with control."]])
 add("shoulder-press","Omuz pres","Overhead press",["deltFront","triLat","triLong"],["trapUpper","absUpper"],"ORTA","Bar/dumbbell/makine","Barbell, dumbbells, or machine","seated_overhead_press",
     sets="3×8-10",rest="90-120 sn",
     steps=[["Ağırlığı omuz hizasında tut, karnı sık.","Hold the weight at shoulder height, brace the core."],["Baş üstüne it, kilitle.","Press overhead to lockout."]])
@@ -293,18 +290,9 @@ add("single-arm-row","Tek kol dumbbell row","Single-arm dumbbell row",["lat","tr
 add("chest-supported-row","Chest-supported row","Chest-supported row",["lat","trapMid","deltPost"],["biceps"],"BAŞLANGIÇ","Eğimli bank + dumbbell","Incline bench, dumbbells","standing_row_hinged",
     sets="3×10-12",rest="75-90 sn",
     steps=[["Göğüs eğimli banka yaslı — bel devre dışı.","Chest braced on the incline bench — no low-back strain."],["Dirsekleri gövdeye yakın çekerek kürek kemiklerini sık.","Row with elbows close to the body, squeeze shoulder blades."]])
-add("seated-cable-row","Oturarak kürek","Seated cable row",["lat","trapMid","deltPost","biceps"],["erector"],"BAŞLANGIÇ","Kablo makinesi","Cable machine","seated_row",
-    sets="3×10-12",rest="75-90 sn",
-    steps=[["Göğsü aç, dirsekleri gövdeye yakın çek.","Open the chest, pull with elbows close to the body."],["Kürek kemiklerini sıkarak bitir.","Finish by squeezing the shoulder blades."]])
-add("lat-pulldown","Lat pulldown","Lat pulldown",["lat","biceps","trapLower"],["deltPost"],"BAŞLANGIÇ","Kablo makinesi","Cable machine","lat_pulldown",
-    sets="3×10-12",rest="75-90 sn",
-    steps=[["Barı göğsün üstüne çek, dirsekler aşağı-geri.","Pull the bar to the upper chest, elbows down and back."],["Kontrollü olarak yukarı bırak.","Return under control."]])
 add("pullup","Barfiks","Pull-up",["lat","biceps","trapLower"],["deltPost","forearmFlex"],"İLERİ","Barfiks barı","Pull-up bar","pullup",
     sets="3×max",rest="90-120 sn",
     steps=[["Omuzlar aşağı-geri, çeneyi bara kadar çek.","Shoulders down and back, pull chin to the bar."],["Kontrollü in.","Lower with control."]])
-add("face-pull","Yüz çekişi","Face pull",["deltPost","trapMid","infra"],[],"BAŞLANGIÇ","Kablo/bant","Cable or band","mobility_generic",
-    sets="3×15",rest="45-60 sn",
-    steps=[["İpi yüze doğru çek, dirsekler yukarı-geri.","Pull the rope toward the face, elbows up and back."],["Dış rotasyonla bitir.","Finish with external rotation."]])
 add("reverse-fly","Dumbbell reverse fly","Dumbbell reverse fly",["deltPost","trapMid"],["infra"],"BAŞLANGIÇ","Dumbbell","Dumbbells","hinged_fly",
     sets="3×12-15",rest="45-60 sn",
     steps=[["Öne eğil, kolları yana açarak kaldır.","Hinge forward, raise arms out to the sides."],["Kürek kemiklerini sıkarak üstte tut.","Squeeze shoulder blades at the top."]])
@@ -316,9 +304,6 @@ add("lateral-raise","Lateral raise","Lateral raise",["deltFront"],["deltPost"],"
 add("biceps-curl","Biceps curl","Biceps curl",["biceps","brachialis"],["forearmFlex"],"BAŞLANGIÇ","Dumbbell/bar","Dumbbells or barbell","standing_arm_isolation",
     sets="3×12",rest="45-60 sn",
     steps=[["Dirsekleri gövdeye sabitle, ağırlığı kaldır.","Pin elbows to the sides, curl the weight up."]])
-add("triceps-pushdown","Triceps pushdown","Triceps pushdown",["triLat","triLong"],[],"BAŞLANGIÇ","Kablo makinesi","Cable machine","standing_arm_isolation",
-    sets="3×12-15",rest="45-60 sn",
-    steps=[["Dirsekler gövdeye sabit, ipi aşağı it.","Elbows pinned to the sides, push the rope down."]])
 add("shrug","Omuz silkme","Shrug",["trapUpper"],[],"BAŞLANGIÇ","Dumbbell/bar","Dumbbells or barbell","standing_arm_isolation",
     sets="3×12",rest="45-60 sn",
     steps=[["Omuzları kulağa doğru kaldır, 1 sn tut.","Shrug shoulders toward the ears, hold 1s."]])
@@ -399,7 +384,7 @@ ALIAS = {
  "Goblet squat veya leg press": "goblet-squat",
  "Back squat": "back-squat",
  "Hack squat veya front squat": "front-hack-squat",
- "Leg press": "leg-press",
+ "Leg press": None,
  "Romanian deadlift": "rdl",
  "Romanian deadlift (bar)": "rdl",
  "Romanian deadlift (dumbbell)": "rdl",
@@ -413,16 +398,16 @@ ALIAS = {
  "Walking lunge": "walking-lunge",
  "Reverse lunge (geriye adım) — destekle": "reverse-lunge",
  "Step-up (kutu)": "step-up",
- "Leg extension": "leg-extension",
- "Leg curl": "leg-curl",
+ "Leg extension": None,
+ "Leg curl": None,
  "Calf raise": "calf-raise",
 
  # upper push
  "Bench press": "bench-press",
  "Bench press (bar veya dumbbell)": "bench-press",
  "Incline dumbbell pres": "incline-press",
- "Göğüs pres (makine veya dumbbell)": "machine-chest-press",
- "Göğüs pres (makine)": "machine-chest-press",
+ "Göğüs pres (makine veya dumbbell)": None,
+ "Göğüs pres (makine)": None,
  "Dumbbell omuz pres": "shoulder-press",
  "Dumbbell omuz pres (oturarak)": "shoulder-press",
  "Omuz pres (makine veya dumbbell)": "shoulder-press",
@@ -434,15 +419,15 @@ ALIAS = {
  "Tek kol dumbbell row": "single-arm-row",
  "Chest-supported dumbbell row": "chest-supported-row",
  "Kablo kürek (chest-supported row)": "chest-supported-row",
- "Oturarak kürek": "seated-cable-row",
- "Oturarak kürek (seated row)": "seated-cable-row",
- "Lat pulldown": "lat-pulldown",
- "Lat pulldown (geniş)": "lat-pulldown",
- "Lat pulldown (nötr tutuş)": "lat-pulldown",
- "Lat pulldown veya barfiks": "lat-pulldown",
+ "Oturarak kürek": None,
+ "Oturarak kürek (seated row)": None,
+ "Lat pulldown": None,
+ "Lat pulldown (geniş)": None,
+ "Lat pulldown (nötr tutuş)": None,
+ "Lat pulldown veya barfiks": None,
  "Weighted barfiks veya ağır lat pulldown": "pullup",
- "Yüz çekişi": "face-pull",
- "Yüz çekişi (face pull)": "face-pull",
+ "Yüz çekişi": None,
+ "Yüz çekişi (face pull)": None,
  "Dumbbell reverse fly": "reverse-fly",
  "Dumbbell reverse fly (öne eğik)": "reverse-fly",
  "Omuz silkme (shrug)": "shrug",
@@ -521,6 +506,9 @@ def joints(p):
     parts = []
     for k in ('head', 'shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle', 'toe'):
         parts.append(f"{k}: [{p[k][0]}, {p[k][1]}]")
+    for k in ('farKnee', 'farAnkle', 'farToe', 'farElbow', 'farWrist'):
+        if k in p:
+            parts.append(f"{k}: [{p[k][0]}, {p[k][1]}]")
     if 'bar' in p:
         parts.append(f"bar: [{p['bar'][0]}, {p['bar'][1]}]")
     if 'arrow' in p:
@@ -535,11 +523,12 @@ def joints(p):
 
 L = []
 A = L.append
-A("""// GENERATED — do not hand-edit. Rebuild with
+A(f"""// GENERATED — do not hand-edit. Rebuild with
 // `marte06/scripts/build_exercise_library.py` (source data lives beside it).
 //
-// The exercise visualiser (PER-19): 46 canonical movements distilled from the
-// ~146 lines across the 14 program templates, each with a muscle-activation
+// The exercise visualiser (PER-19): {len(EXO)} canonical movements distilled from the
+// ~146 lines across the 14 program templates (machine and cable moves were
+// dropped on 3 Sep 2026 — barbell, dumbbell, bench, band and bodyweight only), each with a muscle-activation
 // map and start/end pose frames. Ported from the Claude Design canvas
 // "Exercise Library.dc.html", which was itself built against this app's own
 // theme tokens.
@@ -575,6 +564,17 @@ A("""export interface PoseFrame {
   knee: [number, number];
   ankle: [number, number];
   toe: [number, number];
+  /**
+   * The far-side limb, drawn behind the torso, only where it does something
+   * different from the near one (a lunge's trailing leg, bird-dog's planted
+   * leg and reaching arm). Absent means "same as the near limb" and the
+   * renderer draws a faded copy — right for squats, hinges and presses.
+   */
+  farKnee?: [number, number];
+  farAnkle?: [number, number];
+  farToe?: [number, number];
+  farElbow?: [number, number];
+  farWrist?: [number, number];
   /** Loaded implement (bar/dumbbell/handle). Absent for bodyweight moves. */
   bar?: [number, number];
   /** [x1,y1,x2,y2] motion hint, drawn dashed on the start frame only. */
