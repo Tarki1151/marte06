@@ -210,6 +210,23 @@ ARCH = {
   "A": dict(head=[214,140],shoulder=[192,148],elbow=[178,168],wrist=[176,188],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196]),
   "B": dict(head=[286,166],shoulder=[254,168],elbow=[228,178],wrist=[210,186],hip=[150,150],knee=[110,182],ankle=[100,192],toe=[118,196],arrow=[300,150,270,158]),
  },
+ "bulgarian_split_squat": {  # rear foot up on a bench behind; front leg does the work
+  "A": dict(head=[142,50],shoulder=[144,74],elbow=[130,100],wrist=[134,124],hip=[146,138],knee=[150,174],ankle=[150,206],toe=[174,206],bar=[134,126],
+            farKnee=[92,176],farAnkle=[62,166],farToe=[44,168],props=[{"x":28,"y":168,"w":44,"h":38,"r":4}]),
+  "B": dict(head=[140,72],shoulder=[142,96],elbow=[128,122],wrist=[132,146],hip=[138,158],knee=[176,180],ankle=[168,206],toe=[192,206],bar=[132,148],
+            farKnee=[96,194],farAnkle=[62,166],farToe=[44,168],arrow=[200,118,190,160],props=[{"x":28,"y":168,"w":44,"h":38,"r":4}]),
+ },
+ "glute_bridge": {  # on the floor: shoulders down, feet flat, hips drive up
+  "face": "up",
+  "A": dict(head=[236,196],shoulder=[210,196],elbow=[212,204],wrist=[196,206],hip=[150,196],knee=[104,164],ankle=[86,206],toe=[66,206]),
+  "B": dict(head=[236,196],shoulder=[210,196],elbow=[212,204],wrist=[196,206],hip=[150,154],knee=[104,164],ankle=[86,206],toe=[66,206],arrow=[150,190,150,160]),
+ },
+ "chest_supported_row": {  # chest on an incline bench, dumbbells hang then row to the ribs
+  "A": dict(head=[236,86],shoulder=[210,104],elbow=[200,136],wrist=[196,168],hip=[150,140],knee=[130,176],ankle=[122,206],toe=[144,206],bar=[196,170],
+            props=[{"x":128,"y":98,"w":100,"h":16,"r":6},{"x":150,"y":114,"w":12,"h":92}]),
+  "B": dict(head=[236,86],shoulder=[210,104],elbow=[218,130],wrist=[210,112],hip=[150,140],knee=[130,176],ankle=[122,206],toe=[144,206],bar=[210,114],arrow=[176,160,190,124],
+            props=[{"x":128,"y":98,"w":100,"h":16,"r":6},{"x":150,"y":114,"w":12,"h":92}]),
+ },
  "chin_tuck_side": {  # head-only: the jaw glides straight back, the neck lengthens; nothing else moves
   "A": dict(head=[160,60],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206]),
   "B": dict(head=[146,58],shoulder=[150,84],elbow=[146,110],wrist=[148,138],hip=[150,150],knee=[150,182],ankle=[150,206],toe=[170,206],arrow=[188,60,166,60]),
@@ -296,7 +313,7 @@ add("deadlift","Deadlift","Conventional deadlift",["erector","gluteMax","hamBF",
 add("hip-thrust","Hip thrust","Hip thrust",["gluteMax"],["hamBF","hamST","absMid"],"BAŞLANGIÇ","Bar veya makine","Barbell or machine","hip_thrust",
     sets="3×10-12",rest="90-120 sn",
     steps=[["Üst sırt sedyeye yaslı, kalçayı yukarı it.","Upper back braced on the bench, drive hips upward."],["Üstte kalçayı 1 sn sık, çene içeride.","Squeeze glutes 1s at the top, chin tucked."]])
-add("bulgarian-split-squat","Bulgarian split squat","Bulgarian split squat",["quadRF","quadVL","gluteMax"],["adductors"],"ORTA","Bench + dumbbell","Bench and dumbbells","unilateral_lunge",
+add("bulgarian-split-squat","Bulgarian split squat","Bulgarian split squat",["quadRF","quadVL","gluteMax"],["adductors"],"ORTA","Bench + dumbbell","Bench and dumbbells","bulgarian_split_squat",
     sets="3×8",rest="90 sn",
     steps=[["Arka ayak arkadaki banka yerleştir.","Rear foot elevated on a bench behind you."],["Ön dizle in, topuktan iterek kalk.","Descend on the front leg, drive up through that heel."]])
 add("walking-lunge","Walking lunge","Walking lunge",["quadRF","quadVL","gluteMax"],["adductors","hamBF"],"BAŞLANGIÇ","Dumbbell (opsiyonel)","Dumbbells (optional)","unilateral_lunge",
@@ -330,7 +347,7 @@ add("barbell-row","Barbell row","Barbell row",["lat","trapMid","deltPost","bicep
 add("single-arm-row","Tek kol dumbbell row","Single-arm dumbbell row",["lat","trapMid","biceps"],["deltPost"],"BAŞLANGIÇ","Bank + dumbbell","Bench, dumbbell","standing_row_hinged",
     sets="3×10-12/kol",rest="60-90 sn",
     steps=[["Bir el ve diz bankta, sırt düz.","One hand and knee on the bench, flat back."],["Dumbbell'ı kalçaya doğru çek.","Row the dumbbell toward the hip."]])
-add("chest-supported-row","Chest-supported row","Chest-supported row",["lat","trapMid","deltPost"],["biceps"],"BAŞLANGIÇ","Eğimli bank + dumbbell","Incline bench, dumbbells","standing_row_hinged",
+add("chest-supported-row","Chest-supported row","Chest-supported row",["lat","trapMid","deltPost"],["biceps"],"BAŞLANGIÇ","Eğimli bank + dumbbell","Incline bench, dumbbells","chest_supported_row",
     sets="3×10-12",rest="75-90 sn",
     steps=[["Göğüs eğimli banka yaslı — bel devre dışı.","Chest braced on the incline bench — no low-back strain."],["Dirsekleri gövdeye yakın çekerek kürek kemiklerini sık.","Row with elbows close to the body, squeeze shoulder blades."]])
 add("pullup","Barfiks","Pull-up",["lat","biceps","trapLower"],["deltPost","forearmFlex"],"İLERİ","Barfiks barı","Pull-up bar","pullup",
@@ -379,7 +396,7 @@ add("hanging-knee-raise","Asılı diz çekme","Hanging knee raise",["absLower","
 add("suitcase-carry","Suitcase carry","Suitcase carry",["oblique","absMid"],["forearmFlex","trapUpper"],"BAŞLANGIÇ","Kettlebell/dumbbell","Kettlebell or dumbbell","carry",
     sets="3×30 sn/kol",rest="45 sn",
     steps=[["Tek elde ağırlıkla dik dur, yana eğilmeden yürü.","Stand tall with weight in one hand, walk without leaning."]])
-add("glute-bridge","Kalça köprüsü","Glute bridge",["gluteMax"],["hamBF","absMid"],"BAŞLANGIÇ","Mat","Mat","hip_thrust",
+add("glute-bridge","Kalça köprüsü","Glute bridge",["gluteMax"],["hamBF","absMid"],"BAŞLANGIÇ","Mat","Mat","glute_bridge",
     sets="3×12-15",rest="30-45 sn",
     steps=[["Sırtüstü, dizler bükük, ayaklar yerde.","Lie on back, knees bent, feet flat."],["Kalçayı yukarı it, üstte 1-2 sn sık.","Drive hips up, squeeze 1-2s at the top."]])
 
