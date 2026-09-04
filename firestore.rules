@@ -716,6 +716,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    /**
+     * A coach's note about a member (PER-14c). Staff of the gym read and
+     * write it; the member never reads it — that is the point of the note.
+     * `tenantId` and `memberId` are pinned to the doc id so a note cannot be
+     * re-addressed to another person or gym by editing its fields.
+     */
+    match /member_notes/{noteId} {
+      allow read: if isSignedIn() && isTenantStaff(resource.data.tenantId);
+      allow create, update: if isSignedIn() &&
+        isTenantStaff(request.resource.data.tenantId) &&
+        noteId == request.resource.data.tenantId + '_' + request.resource.data.memberId &&
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 2000;
+      allow delete: if isSignedIn() && isTenantStaff(resource.data.tenantId);
+    }
+
     match /exercise_reports/{reportId} {
       allow read, update, delete: if false;
       allow create: if isSignedIn() &&

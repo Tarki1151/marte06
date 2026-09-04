@@ -1211,6 +1211,51 @@ describe('Password reset throttling (PER-2)', () => {
   }
 });
 
+describe('Member notes (PER-14c)', () => {
+  const note = (over: Record<string, unknown> = {}) => ({
+    tenantId: TENANT, memberId: 'member-1', text: 'Sol diz — derin squat yok.', updatedBy: 'trainer-1', ...over,
+  });
+  const id = `${TENANT}_member-1`;
+
+  test('a trainer can write and read a note about a member', async () => {
+    await seedMembership('trainer-1', 'trainer');
+    const db = testEnv.authenticatedContext('trainer-1').firestore();
+    await assertSucceeds(db.doc(`member_notes/${id}`).set(note()));
+    await assertSucceeds(db.doc(`member_notes/${id}`).get());
+  });
+
+  test('an admin can read and edit the same note — one shared note per member', async () => {
+    await seedMembership('trainer-1', 'trainer');
+    await seedMembership('admin-1', 'admin');
+    await testEnv.authenticatedContext('trainer-1').firestore().doc(`member_notes/${id}`).set(note());
+    const db = testEnv.authenticatedContext('admin-1').firestore();
+    await assertSucceeds(db.doc(`member_notes/${id}`).get());
+    await assertSucceeds(db.doc(`member_notes/${id}`).set(note({ updatedBy: 'admin-1', text: 'Güncellendi.' })));
+  });
+
+  test('the member cannot read the note about themselves — that is the point', async () => {
+    await seedMembership('trainer-1', 'trainer');
+    await seedMembership('member-1', 'member');
+    await testEnv.authenticatedContext('trainer-1').firestore().doc(`member_notes/${id}`).set(note());
+    const db = testEnv.authenticatedContext('member-1').firestore();
+    await assertFails(db.doc(`member_notes/${id}`).get());
+  });
+
+  test('a note cannot be re-addressed: doc id pins tenant and member', async () => {
+    await seedMembership('trainer-1', 'trainer');
+    const db = testEnv.authenticatedContext('trainer-1').firestore();
+    await assertFails(db.doc(`member_notes/${id}`).set(note({ memberId: 'member-2' })));
+  });
+
+  test('updatedBy must be the writer; empty and oversize text are refused', async () => {
+    await seedMembership('trainer-1', 'trainer');
+    const db = testEnv.authenticatedContext('trainer-1').firestore();
+    await assertFails(db.doc(`member_notes/${id}`).set(note({ updatedBy: 'someone-else' })));
+    await assertFails(db.doc(`member_notes/${id}`).set(note({ text: '' })));
+    await assertFails(db.doc(`member_notes/${id}`).set(note({ text: 'x'.repeat(2001) })));
+  });
+});
+
 describe('Exercise reports (PER-19)', () => {
   const report = (over: Record<string, unknown> = {}) => ({
     exerciseId: 'back-squat',

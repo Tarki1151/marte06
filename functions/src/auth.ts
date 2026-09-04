@@ -273,6 +273,7 @@ const MEMBER_OWNED_COLLECTIONS: { name: string; field: string }[] = [
   { name: 'programs', field: 'memberId' },
   { name: 'measurements', field: 'memberId' },
   { name: 'workout_logs', field: 'memberId' },
+  { name: 'member_notes', field: 'memberId' },
   { name: 'payments', field: 'memberId' },
 ];
 
