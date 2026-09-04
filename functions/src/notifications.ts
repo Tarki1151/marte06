@@ -501,3 +501,33 @@ export const resolveRenewalOnAssignment = onDocumentWritten(
     );
   },
 );
+
+/**
+ * PER-16: a new announcement goes to everyone in the gym — members and
+ * trainers — except the admin who wrote it. One push per person through
+ * `sendPushToUser`, so the `announcements` preference is honoured per person
+ * and dead tokens are pruned the usual way. Fan-out is bounded by the gym's
+ * size; the biggest gym on the platform is a few hundred people.
+ */
+export const notifyMembersOnAnnouncement = onDocumentWritten(
+  { document: 'announcements/{announcementId}', region: 'europe-west1' },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (before || !after) return; // creates only
+    const people = await admin
+      .firestore()
+      .collection('tenant_memberships')
+      .where('tenantId', '==', after.tenantId as string)
+      .where('status', '==', 'active')
+      .get();
+    const title = String(after.title);
+    const body = String(after.body || '').slice(0, 140) || 'Salonundan yeni bir duyuru var.';
+    await Promise.all(
+      people.docs
+        .map((d) => d.data().userId as string)
+        .filter((uid) => uid !== after.createdBy)
+        .map((uid) => sendPushToUser(uid, title, body, { screen: 'member/index' }, 'announcements')),
+    );
+  },
+);

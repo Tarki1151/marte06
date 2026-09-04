@@ -728,6 +728,24 @@ service cloud.firestore {
      * admin may close it. The server closes it too when a package is
      * assigned. Nothing else on it changes hands.
      */
+    /**
+     * Announcements (PER-16): the gym to everyone in it. Any active member
+     * or trainer reads; only an admin writes; no edits — a wrong post is
+     * deleted and re-posted, since the push already left with the old words.
+     */
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isTenantAdmin(request.resource.data.tenantId) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 80 &&
+        request.resource.data.body is string &&
+        request.resource.data.body.size() <= 600;
+      allow update: if false;
+      allow delete: if isTenantAdmin(resource.data.tenantId);
+    }
+
     match /renewal_requests/{requestId} {
       allow read: if isSignedIn() && (
         resource.data.memberId == request.auth.uid ||

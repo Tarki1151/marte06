@@ -1211,6 +1211,37 @@ describe('Password reset throttling (PER-2)', () => {
   }
 });
 
+describe('Announcements (PER-16)', () => {
+  const post = (over: Record<string, unknown> = {}) => ({ tenantId: TENANT, title: 'Pazar kapalıyız', body: '', createdBy: 'admin-1', ...over });
+
+  test('an admin posts; members and trainers read', async () => {
+    await seedMembership('admin-1', 'admin');
+    await seedMembership('member-1', 'member');
+    await seedMembership('trainer-1', 'trainer');
+    await assertSucceeds(testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a1').set(post()));
+    await assertSucceeds(testEnv.authenticatedContext('member-1').firestore().doc('announcements/a1').get());
+    await assertSucceeds(testEnv.authenticatedContext('trainer-1').firestore().doc('announcements/a1').get());
+  });
+
+  test('a member or trainer cannot post; nobody edits; an admin deletes', async () => {
+    await seedMembership('admin-1', 'admin');
+    await seedMembership('member-1', 'member');
+    await seedMembership('trainer-1', 'trainer');
+    await assertFails(testEnv.authenticatedContext('member-1').firestore().doc('announcements/a2').set(post({ createdBy: 'member-1' })));
+    await assertFails(testEnv.authenticatedContext('trainer-1').firestore().doc('announcements/a3').set(post({ createdBy: 'trainer-1' })));
+    await testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a4').set(post());
+    await assertFails(testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a4').update({ title: 'Düzenlendi' }));
+    await assertSucceeds(testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a4').delete());
+  });
+
+  test('someone outside the gym cannot read it; a blank title is refused', async () => {
+    await seedMembership('admin-1', 'admin');
+    await testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a5').set(post());
+    await assertFails(testEnv.authenticatedContext('stranger').firestore().doc('announcements/a5').get());
+    await assertFails(testEnv.authenticatedContext('admin-1').firestore().doc('announcements/a6').set(post({ title: '' })));
+  });
+});
+
 describe('Renewal requests (PER-15)', () => {
   const id = `${TENANT}_member-1`;
   const req = (over: Record<string, unknown> = {}) => ({

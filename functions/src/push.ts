@@ -17,6 +17,8 @@ export type NotificationCategory =
   | 'payments'
   /** Antrenörün yazdığı program. */
   | 'programs'
+  /** Salon duyuruları — "yarın kapalıyız", yeni ders, kampanya. */
+  | 'announcements'
   /**
    * Ebeveyn onayı ve hesap güvenliği. **Kapatılamaz** — bunlar rıza ve
    * erişim akışları, bildirim değil; susturulursa akış tamamlanamaz.
@@ -29,6 +31,7 @@ export const MUTABLE_CATEGORIES: NotificationCategory[] = [
   'packages',
   'payments',
   'programs',
+  'announcements',
 ];
 
 /**
