@@ -301,7 +301,7 @@ service cloud.firestore {
       // Approve/reject, and assign roles or delegated permissions. A trainer
       // can never grant themselves 'checkin' — only a tenant admin writes here.
       allow update: if isTenantAdmin(resource.data.tenantId) &&
-        request.resource.data.diff(resource.data).changedKeys()
+        request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'approvedAt', 'roles', 'permissions']) &&
         request.resource.data.status in ['active', 'rejected', 'suspended'] &&
         // Activating a member is what consumes a seat; rejecting, suspending
@@ -332,8 +332,9 @@ service cloud.firestore {
       // validates `status` on every write, so a pure profile edit on a
       // still-`pending` request would have failed it.
       allow update: if isTenantAdmin(resource.data.tenantId) &&
-        request.resource.data.diff(resource.data).changedKeys()
-          .hasOnly(['userDisplayName', 'phone', 'birthDate']) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['userDisplayName', 'phone', 'birthDate', 'heightCm', 'photoUrl']) &&
+        (!('heightCm' in request.resource.data) || (request.resource.data.heightCm is number && request.resource.data.heightCm >= 100 && request.resource.data.heightCm <= 250)) &&
         (!('userDisplayName' in request.resource.data) ||
           (request.resource.data.userDisplayName is string &&
            request.resource.data.userDisplayName.size() > 0 &&
@@ -355,11 +356,19 @@ service cloud.firestore {
       // write changed nothing. Harmless to the data, but it turns "a member
       // may only edit these three fields" into "a member may write this
       // document", and the leave-path tests are right to object.
+      // `affectedKeys`, not `changedKeys`: `changedKeys` lists only keys that
+      // exist in BOTH maps with different values, so ADDING a field it does
+      // not mention yields an empty set. That made every "fill in what you
+      // left blank" write fail — a member adding their first phone number or
+      // height changed nothing by that definition, so the `size() > 0` guard
+      // rejected them. `affectedKeys` counts added, removed and changed keys,
+      // which is what "these are the only fields you may touch" means.
       allow update: if isSignedIn() &&
         resource.data.userId == request.auth.uid &&
-        request.resource.data.diff(resource.data).changedKeys().size() > 0 &&
-        request.resource.data.diff(resource.data).changedKeys()
-          .hasOnly(['userDisplayName', 'phone', 'birthDate']) &&
+        request.resource.data.diff(resource.data).affectedKeys().size() > 0 &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['userDisplayName', 'phone', 'birthDate', 'heightCm', 'photoUrl']) &&
+        (!('heightCm' in request.resource.data) || (request.resource.data.heightCm is number && request.resource.data.heightCm >= 100 && request.resource.data.heightCm <= 250)) &&
         (!('userDisplayName' in request.resource.data) ||
           (request.resource.data.userDisplayName is string &&
            request.resource.data.userDisplayName.size() > 0 &&
@@ -375,7 +384,7 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid &&
         resource.data.status == 'active' &&
         !('admin' in resource.data.roles) &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'leftAt']) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'leftAt']) &&
         request.resource.data.status == 'left';
       // Rejoin: someone who left, or whose request was rejected, applies
       // again. Without this the doc id (`{tenantId}_{uid}`) is already taken,
@@ -399,7 +408,7 @@ service cloud.firestore {
         request.resource.data.get('permissions', []) == [] &&
         request.resource.data.tenantId == resource.data.tenantId &&
         request.resource.data.userId == resource.data.userId &&
-        request.resource.data.diff(resource.data).changedKeys()
+        request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'roles', 'permissions', 'requestedAt', 'leftAt', 'approvedAt']);
       allow delete: if false;
     }

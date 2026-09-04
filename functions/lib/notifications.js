@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendClassReminders = exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnClassCancelled = exports.notifyAdminsOnMemberLeft = exports.notifyAdminsOnJoinRequest = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentReversed = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = void 0;
+exports.notifyMembersOnAnnouncement = exports.resolveRenewalOnAssignment = exports.notifyAdminsOnRenewalRequest = exports.sendClassReminders = exports.notifyTrainerOnSessionCancelled = exports.notifyAdminsOnPackageChangeResponse = exports.notifyAdminsOnPaymentNotice = exports.notifyOnClassCancelled = exports.notifyAdminsOnMemberLeft = exports.notifyAdminsOnJoinRequest = exports.notifyOnPackageChangeRequested = exports.notifyOnProgramAssigned = exports.notifyOnPaymentReversed = exports.notifyOnPaymentStatusChange = exports.notifyOnMembershipApproved = void 0;
 exports.notifyTenantAdmins = notifyTenantAdmins;
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = __importStar(require("firebase-admin"));
@@ -345,5 +345,72 @@ exports.sendClassReminders = (0, scheduler_1.onSchedule)({ schedule: 'every 15 m
         sent += 1;
     }
     console.log(`sendClassReminders: ${sent} hatırlatma gönderildi`);
+});
+/**
+ * PER-15: a member asked for their package to be renewed.
+ *
+ * The renewal conversation is the one the gym most wants to have; this is the
+ * member starting it. Fires on the transition INTO `pending` — a withdrawn
+ * request being re-opened counts as a new ask.
+ */
+exports.notifyAdminsOnRenewalRequest = (0, firestore_1.onDocumentWritten)({ document: 'renewal_requests/{requestId}', region: 'europe-west1' }, async (event) => {
+    var _a, _b, _c, _d;
+    const before = (_b = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before) === null || _b === void 0 ? void 0 : _b.data();
+    const after = (_d = (_c = event.data) === null || _c === void 0 ? void 0 : _c.after) === null || _d === void 0 ? void 0 : _d.data();
+    if (!after || after.status !== 'pending' || (before === null || before === void 0 ? void 0 : before.status) === 'pending')
+        return;
+    const who = after.memberName || 'Bir üye';
+    await notifyTenantAdmins(after.tenantId, 'Yenileme talebi', `${who} paketini yenilemek istiyor.${after.note ? ` "${String(after.note).slice(0, 80)}"` : ''}`, { screen: 'admin/members' }, 'packages');
+});
+/**
+ * PER-15: a new package assignment answers an open renewal request.
+ *
+ * Closed here rather than by an admin tap because the assignment IS the
+ * answer; asking the admin to also mark the request handled is a step that
+ * gets forgotten, and a stale "pending" line on the panel then says the
+ * opposite of what happened.
+ */
+exports.resolveRenewalOnAssignment = (0, firestore_1.onDocumentWritten)({ document: 'member_packages/{assignmentId}', region: 'europe-west1' }, async (event) => {
+    var _a, _b, _c, _d, _e;
+    const before = (_b = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before) === null || _b === void 0 ? void 0 : _b.data();
+    const after = (_d = (_c = event.data) === null || _c === void 0 ? void 0 : _c.after) === null || _d === void 0 ? void 0 : _d.data();
+    if (before || !after)
+        return; // creates only
+    const ref = admin.firestore().doc(`renewal_requests/${after.tenantId}_${after.memberId}`);
+    const snap = await ref.get();
+    if (!snap.exists || ((_e = snap.data()) === null || _e === void 0 ? void 0 : _e.status) !== 'pending')
+        return;
+    await ref.update({
+        status: 'handled',
+        handledAt: admin.firestore.Timestamp.now(),
+        handledBy: after.assignedBy || 'system',
+    });
+    await (0, push_1.sendPushToUser)(after.memberId, 'Paketin yenilendi', `${after.packageName} paketin tanımlandı. Yenileme talebin kapatıldı.`, { screen: 'member/index' }, 'packages');
+});
+/**
+ * PER-16: a new announcement goes to everyone in the gym — members and
+ * trainers — except the admin who wrote it. One push per person through
+ * `sendPushToUser`, so the `announcements` preference is honoured per person
+ * and dead tokens are pruned the usual way. Fan-out is bounded by the gym's
+ * size; the biggest gym on the platform is a few hundred people.
+ */
+exports.notifyMembersOnAnnouncement = (0, firestore_1.onDocumentWritten)({ document: 'announcements/{announcementId}', region: 'europe-west1' }, async (event) => {
+    var _a, _b, _c, _d;
+    const before = (_b = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before) === null || _b === void 0 ? void 0 : _b.data();
+    const after = (_d = (_c = event.data) === null || _c === void 0 ? void 0 : _c.after) === null || _d === void 0 ? void 0 : _d.data();
+    if (before || !after)
+        return; // creates only
+    const people = await admin
+        .firestore()
+        .collection('tenant_memberships')
+        .where('tenantId', '==', after.tenantId)
+        .where('status', '==', 'active')
+        .get();
+    const title = String(after.title);
+    const body = String(after.body || '').slice(0, 140) || 'Salonundan yeni bir duyuru var.';
+    await Promise.all(people.docs
+        .map((d) => d.data().userId)
+        .filter((uid) => uid !== after.createdBy)
+        .map((uid) => (0, push_1.sendPushToUser)(uid, title, body, { screen: 'member/index' }, 'announcements')));
 });
 //# sourceMappingURL=notifications.js.map

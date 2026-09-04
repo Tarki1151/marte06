@@ -1211,6 +1211,38 @@ describe('Password reset throttling (PER-2)', () => {
   }
 });
 
+describe('Member profile: height and photo (PER-20)', () => {
+  // Same seed shape as the MEMBER-5a self-edit tests: the update branches read
+  // `permissions` and the tenant doc, and a membership missing either is an
+  // evaluation error in every branch rather than a clean false.
+  const seedTenant = async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`tenants/${TENANT}`).set({ code: 'T-1', name: 'T' });
+      await ctx.firestore().doc(`tenant_memberships/${TENANT}_member-1`).set({
+        userId: 'member-1', tenantId: TENANT, status: 'active', roles: ['member'], permissions: [], userDisplayName: 'Üye Bir',
+      });
+      await ctx.firestore().doc(`tenant_memberships/${TENANT}_admin-1`).set({
+        userId: 'admin-1', tenantId: TENANT, status: 'active', roles: ['admin'], permissions: [], userDisplayName: 'Yönetici',
+      });
+    });
+  };
+
+  test('a member sets their own height and photo; an absurd height is refused', async () => {
+    await seedTenant();
+    const db = testEnv.authenticatedContext('member-1').firestore();
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_member-1`).update({ heightCm: 178 }));
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_member-1`).update({ photoUrl: 'https://x/avatar.jpg?token=t' }));
+    await assertFails(db.doc(`tenant_memberships/${TENANT}_member-1`).update({ heightCm: 12 }));
+  });
+
+  test('an admin may correct height; height cannot ride along on a role change', async () => {
+    await seedTenant();
+    const db = testEnv.authenticatedContext('admin-1').firestore();
+    await assertSucceeds(db.doc(`tenant_memberships/${TENANT}_member-1`).update({ heightCm: 180 }));
+    await assertFails(db.doc(`tenant_memberships/${TENANT}_member-1`).update({ roles: ['member', 'trainer'], heightCm: 181 }));
+  });
+});
+
 describe('Announcements (PER-16)', () => {
   const post = (over: Record<string, unknown> = {}) => ({ tenantId: TENANT, title: 'Pazar kapalıyız', body: '', createdBy: 'admin-1', ...over });
 

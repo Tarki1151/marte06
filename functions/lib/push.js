@@ -42,6 +42,7 @@ exports.MUTABLE_CATEGORIES = [
     'packages',
     'payments',
     'programs',
+    'announcements',
 ];
 /**
  * Whether this person still wants this kind of notification.

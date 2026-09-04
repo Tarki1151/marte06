@@ -266,6 +266,7 @@ const MEMBER_OWNED_COLLECTIONS = [
     { name: 'programs', field: 'memberId' },
     { name: 'measurements', field: 'memberId' },
     { name: 'workout_logs', field: 'memberId' },
+    { name: 'member_notes', field: 'memberId' },
     { name: 'payments', field: 'memberId' },
 ];
 async function deleteQueryBatched(query) {

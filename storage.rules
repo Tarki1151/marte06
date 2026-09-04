@@ -32,12 +32,14 @@ service firebase.storage {
       allow write: if false;
     }
 
-    // Member-specific files (future: profile photos, documents)
+    // Member photos (PER-20): written only by the `uploadMemberPhoto`
+    // callable (Admin SDK), read only through the tokenised download URL
+    // stored on the membership — the token is the grant, so the roster can
+    // render photos without a cross-service rule (see tenant-logos above for
+    // why that foundation was abandoned). Deleting the object rotates the
+    // token away with it.
     match /members/{uid}/{allPaths=**} {
-      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin()) &&
-                     request.resource.size < 5 * 1024 * 1024 &&
-                     request.resource.contentType.matches('image/.*');
+      allow read, write: if false;
     }
 
     // Default: only admins can access other paths

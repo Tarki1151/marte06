@@ -38,6 +38,7 @@ export { bookPtSessions, cancelPtSession } from './sessions';
 export { requestGuardian, respondToGuardian } from './guardians';
 export { revenueCatWebhook } from './subscriptions';
 export { uploadTenantLogo } from './branding';
+export { uploadMemberPhoto, deleteMemberPhoto } from './media';
 export { emailExerciseReport } from './exerciseReports';
 export { requestPasswordReset } from './passwordReset';
 export { bookGroupClass, cancelGroupClassBooking } from './groupClasses';

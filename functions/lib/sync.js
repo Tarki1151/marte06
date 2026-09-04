@@ -247,26 +247,35 @@ function deepEqual(a, b) {
  * the overwhelming majority of writes.
  */
 exports.reconcileMirrors = (0, scheduler_1.onSchedule)({ schedule: 'every monday 03:00', region: 'europe-west1', timeZone: 'Europe/Istanbul' }, async () => {
-    var _a, _b;
+    var _a, _b, _c;
     const db = admin.firestore();
     let checked = 0;
     let fixed = 0;
-    // --- 1. tenants.activeMemberCount ---
+    // --- 1. tenants.activeMemberCount + activeAdminCount ---
+    // Both tallies are read by rules that cap something (free-tier seats,
+    // the three admin seats). Drift in either silently moves a limit, so
+    // both get the same weekly correction.
     const tenantsSnap = await db.collection('tenants').get();
     for (const tenantDoc of tenantsSnap.docs) {
         checked += 1;
-        const countSnap = await db
+        const countRole = async (role) => (await db
             .collection('tenant_memberships')
             .where('tenantId', '==', tenantDoc.id)
             .where('status', '==', 'active')
-            .where('roles', 'array-contains', 'member')
+            .where('roles', 'array-contains', role)
             .count()
-            .get();
-        const trueCount = countSnap.data().count;
-        if (((_a = tenantDoc.data().activeMemberCount) !== null && _a !== void 0 ? _a : 0) !== trueCount) {
-            await tenantDoc.ref.set({ activeMemberCount: trueCount }, { merge: true });
+            .get()).data().count;
+        const trueMembers = await countRole('member');
+        const trueAdmins = await countRole('admin');
+        const patch = {};
+        if (((_a = tenantDoc.data().activeMemberCount) !== null && _a !== void 0 ? _a : 0) !== trueMembers)
+            patch.activeMemberCount = trueMembers;
+        if (((_b = tenantDoc.data().activeAdminCount) !== null && _b !== void 0 ? _b : 0) !== trueAdmins)
+            patch.activeAdminCount = trueAdmins;
+        if (Object.keys(patch).length > 0) {
+            await tenantDoc.ref.set(patch, { merge: true });
             fixed += 1;
-            console.log(`[reconcile] tenants/${tenantDoc.id}.activeMemberCount → ${trueCount}`);
+            console.log(`[reconcile] tenants/${tenantDoc.id} → ${JSON.stringify(patch)}`);
         }
     }
     // --- 2. gym_packages.activeAssignmentCount ---
@@ -280,7 +289,7 @@ exports.reconcileMirrors = (0, scheduler_1.onSchedule)({ schedule: 'every monday
             .count()
             .get();
         const trueCount = countSnap.data().count;
-        if (((_b = pkgDoc.data().activeAssignmentCount) !== null && _b !== void 0 ? _b : 0) !== trueCount) {
+        if (((_c = pkgDoc.data().activeAssignmentCount) !== null && _c !== void 0 ? _c : 0) !== trueCount) {
             await pkgDoc.ref.set({ activeAssignmentCount: trueCount }, { merge: true });
             fixed += 1;
             console.log(`[reconcile] gym_packages/${pkgDoc.id}.activeAssignmentCount → ${trueCount}`);

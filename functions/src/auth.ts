@@ -2,6 +2,8 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
+import { deleteMemberPhotoObject } from './media';
+
 // Admin email list — used ONLY for the initial claim seeding.
 // After claims are set, this list is no longer the source of truth.
 const ADMIN_EMAILS = [
@@ -201,6 +203,9 @@ export const deleteMyAccount = onCall(
     }
 
     // Auth record last: if anything above throws, the user can retry.
+    // The photo is the one thing the cascade above cannot reach — it lives
+    // in Storage, not Firestore. A deleted account leaves no face behind.
+    await deleteMemberPhotoObject(uid);
     await admin.auth().deleteUser(uid);
 
     console.log(`Account deleted: ${uid}`);
